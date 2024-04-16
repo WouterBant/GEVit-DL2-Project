@@ -18,12 +18,12 @@ python run_experiment.py --config.dataset rotMNIST --config.model p4sa --config.
 
 #### Command for running  CIFAR-10
 ```
-python run_experiment.py --dataset CIFAR10 --model mz2sa --norm_type LayerNorm --attention_type Local --activation_function Swish --patch_size 5 --dropout_att 0.1 --dropout_values 0.0 --whitening_scale 1.41421356 --epochs 350 --optimizer SGD --lr=0.01 --optimizer_momentum 0.9 --scheduler linear_warmup_cosine --optimizer_decay_steps 1000 --optimizer_decay_factor 1.0 --weight_decay 0.0001 --batch_size 24 --device cuda --seed 0 --comment ""
+python run_experiment.py --config.dataset CIFAR10 --config.model mz2sa --config.norm_type LayerNorm --config.attention_type Local --config.activation_function Swish --config.patch_size 5 --config.dropout_att 0.1 --config.dropout_values 0.0 --config.whitening_scale 1.41421356 --config.epochs 350 --config.optimizer SGD --config.lr=0.01 --config.optimizer_momentum 0.9 --config.scheduler linear_warmup_cosine --config.sched_decay_steps='(1000,)' --config.sched_decay_factor 1.0 --config.weight_decay 0.0001 --config.batch_size 24 --config.device cuda --config.seed 0 --config.comment ""
 ```
 
 #### Command for running PatchCamelyon
 ```
-python run_experiment.py --dataset PCam --model p4sa --norm_type LayerNorm --attention_type Local --activation_function Swish --patch_size 5 --dropout_att 0.1 --dropout_values 0.1 --whitening_scale 1.41421356 --epochs 100 --optimizer SGD --lr 0.01 --optimizer_momentum 0.9 --scheduler linear_warmup_cosine --optimizer_decay_steps 1000 --optimizer_decay_factor 1.0 --weight_decay 0.0001 --batch_size 16 --device cuda --seed 0 --comment ""
+python run_experiment.py --config.dataset PCam --config.model p4sa --config.norm_type LayerNorm --config.attention_type Local --config.activation_function Swish --config.patch_size 5 --config.dropout_att 0.1 --config.dropout_values 0.1 --config.whitening_scale 1.41421356 --config.epochs 100 --config.optimizer SGD --config.lr 0.01 --config.optimizer_momentum 0.9 --config.scheduler linear_warmup_cosine --config.sched_decay_steps='(1000,)' --config.sched_decay_factor 1.0 --config.weight_decay 0.0001 --config.batch_size 16 --config.device cuda --config.seed 0 --config.comment ""
 ```
 
 ### Note

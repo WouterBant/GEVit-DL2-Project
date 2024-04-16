@@ -9,6 +9,7 @@ from torch.optim.lr_scheduler import LambdaLR
 
 import tester
 from g_selfatt import utils
+from tqdm import tqdm
 
 
 def train(model, dataloaders, config):
@@ -34,7 +35,7 @@ def train(model, dataloaders, config):
     best_acc = 0.0
     best_loss = 999
     # iterate over epochs
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs)):
         print("Epoch {}/{}".format(epoch + 1, epochs))
         print("-" * 30)
         # Print current learning rate
