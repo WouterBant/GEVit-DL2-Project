@@ -7,7 +7,7 @@ class PCam(ImageFolder):
     """
     PCam dataset.
 
-    Download the dataset from https://drive.google.com/file/d/1PcPdBOyImivBz3IMYopIizGvJOnfgXGD/view?usp=sharing
+    Download the dataset from https://drive.google.com/file/d/1THSEUCO3zg74NKf_eb3ysKiiq2182iMH/view?usp=sharing
 
     For more information, please refer to the README.md of the repository.
     """
