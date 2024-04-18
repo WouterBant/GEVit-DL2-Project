@@ -57,6 +57,8 @@ def get_config():
         path="",
         # This parameter is automatically derived from the other parameters of the run. It specifies
         # the path where the network parameters will be saved / loaded from.
+        # The fraction of data to be used in the training and test set.
+        data_fraction=1.0,
     )
     default_config = ml_collections.ConfigDict(default_config)
     return default_config

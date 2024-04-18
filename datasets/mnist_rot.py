@@ -42,7 +42,7 @@ class MNIST_rot(VisionDataset):
         "9 - nine",
     ]
 
-    def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
+    def __init__(self, root, train=True, transform=None, target_transform=None, download=False, data_fraction=1):
         super().__init__(root, transform=transform, target_transform=target_transform)
         self.train = train  # training set or test set
 
@@ -56,7 +56,19 @@ class MNIST_rot(VisionDataset):
             data_file = self.training_file
         else:
             data_file = self.test_file
+            
+        # Load data
         self.data, self.targets = torch.load(os.path.join(self.processed_folder, data_file))
+        
+        # Reduce the dataset size if specified by data_fraction sample a fraction of the data
+        if data_fraction < 1:
+            print(f"Total length of the training dataset: {len(self.data)}") if self.train else print(f"Total length of the test dataset: {len(self.data)}")
+            n = int(len(self.data) * data_fraction)
+            torch.manual_seed(0)
+            idx = torch.randperm(len(self.data))[:n]
+            self.data = self.data[idx]
+            self.targets = self.targets[idx]
+            print(f"Reduced length of the training dataset: {len(self.data)}") if self.train else print(f"Reduced length of the test dataset: {len(self.data)}")
 
     def __getitem__(self, index):
         """
