@@ -8,7 +8,7 @@ from datasets import MNIST_rot, PCam
 
 
 def get_dataset(
-    config: ml_collections.ConfigDict, num_workers: int = 4, data_root: str = "./data"
+    config: ml_collections.ConfigDict, num_workers: int = 4, data_fraction = 1, data_root: str = "./data"
 ) -> Dict[str, torch.utils.data.DataLoader]:
     """
     Create dataloaders for the chosen datasets
@@ -24,6 +24,7 @@ def get_dataset(
     if "cifar" in config.dataset.lower():
         data_mean = (0.4914, 0.4822, 0.4465)
         data_stddev = (0.2023, 0.1994, 0.2010)
+        # Augment the data if specified
         if config.augment:
             transform_train = torchvision.transforms.Compose(
                 [
@@ -33,7 +34,7 @@ def get_dataset(
                     torchvision.transforms.Normalize(data_mean, data_stddev),
                 ]
             )
-        else:
+        else: # Else only normalize
             transform_train = torchvision.transforms.Compose(
                 [
                     torchvision.transforms.ToTensor(),
@@ -68,8 +69,8 @@ def get_dataset(
         ]
     )
 
-    training_set = dataset(root=data_root, train=True, download=True, transform=transform_train)
-    test_set = dataset(root=data_root, train=False, download=True, transform=transform_test)
+    training_set = dataset(root=data_root, train=True, download=True, transform=transform_train, data_fraction=data_fraction)
+    test_set = dataset(root=data_root, train=False, download=True, transform=transform_test, data_fraction=data_fraction)
 
     training_loader = torch.utils.data.DataLoader(
         training_set,

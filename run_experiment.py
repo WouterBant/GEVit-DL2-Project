@@ -61,7 +61,7 @@ def main(_):
     model = get_model(config)
 
     # Define transforms and create dataloaders
-    dataloaders = dataset.get_dataset(config, num_workers=4)
+    dataloaders = dataset.get_dataset(config, num_workers=4, data_fraction=config.data_fraction)
 
     # Create model directory and instantiate config.path
     model_path(config)
