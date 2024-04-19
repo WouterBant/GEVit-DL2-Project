@@ -34,8 +34,15 @@ def train(model, dataloaders, config):
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
     best_loss = 999
+
+    last_epoch_acc = 999
+    early_stopping_ctr = 0
+    early_stopping_threshold = 10
+    early_stop = False
+
     # iterate over epochs
     for epoch in tqdm(range(epochs)):
+        if early_stop: break
         print("Epoch {}/{}".format(epoch + 1, epochs))
         print("-" * 30)
         # Print current learning rate
@@ -116,6 +123,18 @@ def train(model, dataloaders, config):
                 {"accuracy" + "_" + phase: epoch_acc, "loss" + "_" + phase: epoch_loss},
                 step=epoch + 1,
             )
+
+            # early stopping mechanism
+            if phase == "validation" and epoch_acc < last_epoch_acc:
+                early_stopping_ctr += 1
+            else:
+                early_stopping_ctr = 0
+
+            if early_stopping_ctr == early_stopping_threshold:
+                early_stop = True
+                break
+
+            last_epoch_acc = epoch_acc
 
             # If better validation accuracy, replace best weights and compute the test performance
             if phase == "validation" and epoch_acc >= best_acc:
