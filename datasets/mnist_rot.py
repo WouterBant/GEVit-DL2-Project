@@ -5,12 +5,7 @@ import numpy as np
 import torch
 from PIL import Image
 from torchvision.datasets import VisionDataset
-from torchvision.datasets.utils import (
-    download_and_extract_archive,
-    download_url,
-    extract_archive,
-    verify_str_arg,
-)
+from torchvision.datasets.utils import download_and_extract_archive
 
 
 class MNIST_rot(VisionDataset):
@@ -28,6 +23,7 @@ class MNIST_rot(VisionDataset):
     ]
 
     training_file = "training.pt"
+    validation_file = "validation.pt"
     test_file = "test.pt"
     classes = [
         "0 - zero",
@@ -42,33 +38,37 @@ class MNIST_rot(VisionDataset):
         "9 - nine",
     ]
 
-    def __init__(self, root, train=True, transform=None, target_transform=None, download=False, data_fraction=1):
+    def __init__(self, root, stage="train", transform=None, target_transform=None, download=False, data_fraction=1):
         super().__init__(root, transform=transform, target_transform=target_transform)
-        self.train = train  # training set or test set
-
+        self.stage = stage  # training set or test set
+    
         if download:
             self.download()
 
         if not self._check_exists():
             raise RuntimeError("Dataset not found." + " You can use download=True to download it")
 
-        if self.train:
+        if stage == "train":
             data_file = self.training_file
-        else:
+        elif stage == "validation":
+            data_file = self.validation_file
+        elif stage == "test":
             data_file = self.test_file
+        else:
+            raise ValueError("Invalid stage argument")
             
         # Load data
         self.data, self.targets = torch.load(os.path.join(self.processed_folder, data_file))
         
-        # Reduce the dataset size if specified by data_fraction sample a fraction of the data
-        if data_fraction < 1:
-            print(f"Total length of the training dataset: {len(self.data)}") if self.train else print(f"Total length of the test dataset: {len(self.data)}")
+        # Reduce the training dataset size if specified by data_fraction sample a fraction of the data
+        if stage == "train" and data_fraction < 1:
+            print(f"Total length of the training dataset: {len(self.data)}")
             n = int(len(self.data) * data_fraction)
             torch.manual_seed(0)
             idx = torch.randperm(len(self.data))[:n]
             self.data = self.data[idx]
             self.targets = self.targets[idx]
-            print(f"Reduced length of the training dataset: {len(self.data)}") if self.train else print(f"Reduced length of the test dataset: {len(self.data)}")
+            print(f"Reduced length of the training dataset: {len(self.data)}")
 
     def __getitem__(self, index):
         """
@@ -145,7 +145,9 @@ class MNIST_rot(VisionDataset):
         train_val_data = (train_val_data * 256).round().type(torch.uint8)
         train_val_labels = train_val[:, -1].type(torch.uint8)
         training_set = (train_val_data[:10000], train_val_labels[:10000])
-        # we ignore the validation test
+        
+        # we don't ignore the validation set
+        validation_set = (train_val_data[10000:], train_val_labels[10000:])
 
         test_data = test[:, :-1].reshape(-1, 28, 28)
         test_data = (test_data * 256).round().type(torch.uint8)
@@ -154,10 +156,12 @@ class MNIST_rot(VisionDataset):
 
         with open(os.path.join(self.processed_folder, self.training_file), "wb") as f:
             torch.save(training_set, f)
+        with open(os.path.join(self.processed_folder, self.validation_file), "wb") as f:
+            torch.save(validation_set, f)
         with open(os.path.join(self.processed_folder, self.test_file), "wb") as f:
             torch.save(test_set, f)
 
         print("Done!")
 
     def extra_repr(self):
-        return "Split: {}".format("Train" if self.train is True else "Test")
+        return "Split: " + self.stage

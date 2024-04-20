@@ -3,6 +3,7 @@ from typing import Dict
 import ml_collections
 import torch
 import torchvision
+from collections import Counter
 
 from datasets import MNIST_rot, PCam
 
@@ -69,8 +70,13 @@ def get_dataset(
         ]
     )
 
-    training_set = dataset(root=data_root, train=True, download=True, transform=transform_train, data_fraction=data_fraction)
-    test_set = dataset(root=data_root, train=False, download=True, transform=transform_test, data_fraction=data_fraction)
+    if "mnist" in config.dataset.lower():
+        training_set = dataset(root=data_root, stage="train", download=True, transform=transform_train, data_fraction=data_fraction)
+        validation_set = dataset(root=data_root, stage="validation", download=True, transform=transform_test, data_fraction=data_fraction)  # Use test transform
+        test_set = dataset(root=data_root, stage="test", download=True, transform=transform_test, data_fraction=data_fraction)
+    else:   
+        training_set = dataset(root=data_root, train=True, download=True, transform=transform_train, data_fraction=data_fraction)
+        test_set = dataset(root=data_root, train=False, download=True, transform=transform_test, data_fraction=data_fraction)
 
     training_loader = torch.utils.data.DataLoader(
         training_set,
@@ -97,7 +103,47 @@ def get_dataset(
             num_workers=num_workers,
         )
         dataloaders["validation"] = val_loader
+    elif "mnist" in config.dataset.lower():
+        # The test loader is the same as the validation loader
+        dataloaders["validation"] = torch.utils.data.DataLoader(
+            validation_set,
+            batch_size=config.batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+        )
     else:
-        dataloaders["validation"] = test_loader
+        dataloaders["validation"] = test_loader  # TODO: this will finetune on the test dataset (already fixed this for mnist)
+
+
+    # Calculate label distribution in training set
+    train_labels = [label for _, label in training_loader.dataset]
+    train_label_counts = Counter(train_labels)
+
+    # Calculate label distribution in validation set
+    val_labels = [label for _, label in dataloaders['validation'].dataset]
+    val_label_counts = Counter(val_labels)
+
+    # Calculate label distribution in test set
+    test_labels = [label for _, label in test_loader.dataset]
+    test_label_counts = Counter(test_labels)
+
+    print("\n"+"-"*30)
+    print(f"Running experiment on {config.dataset.lower()} dataset")
+    print(f"Number of train samples: {len(training_loader.dataset)}")
+    print(f"Number of validation samples: {len(dataloaders['validation'].dataset)}")
+    print(f"Number of test samples: {len(test_loader.dataset)}")
+
+    print("\nLabel distribution in training set:")
+    for label, count in sorted(train_label_counts.items()):
+        print(f"Label {label}: {count} samples")
+
+    print("\nLabel distribution in validation set:")
+    for label, count in sorted(val_label_counts.items()):
+        print(f"Label {label}: {count} samples")
+
+    print("\nLabel distribution in test set:")
+    for label, count in sorted(test_label_counts.items()):
+        print(f"Label {label}: {count} samples")
+    print("\n"+"-"*30)
 
     return dataloaders

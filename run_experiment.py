@@ -43,7 +43,7 @@ def main(_):
     #     )
 
     # initialize weight and bias
-    os.environ["WANDB_API_KEY"] = "691777d26bb25439a75be52632da71d865d3a671"
+    os.environ["WANDB_API_KEY"] = "691777d26bb25439a75be52632da71d865d3a671"  # TODO change this if we are doing serious runs
     if not config.train:
         os.environ["WANDB_MODE"] = "dryrun"
 

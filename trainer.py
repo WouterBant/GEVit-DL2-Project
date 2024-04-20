@@ -40,32 +40,38 @@ def train(model, dataloaders, config):
     early_stopping_threshold = 10
     early_stop = False
 
-    # iterate over epochs
+    # Training loop
     for epoch in tqdm(range(epochs)):
-        if early_stop: break
+        if early_stop:
+            break
+
+        # Logging steps
         print("Epoch {}/{}".format(epoch + 1, epochs))
         print("-" * 30)
+
         # Print current learning rate
         for param_group in optimizer.param_groups:
             print("Learning Rate: {}".format(param_group["lr"]))
         print("-" * 30)
+
         # log learning_rate of the epoch
         wandb.log({"lr": optimizer.param_groups[0]["lr"]}, step=epoch + 1)
 
         # Each epoch consist of training and validation
         for phase in ["train", "validation"]:
-            train = phase == "train"
+            train = (phase == "train")
             if train:
                 model.train()
             else:
                 model.eval()
 
             # Accumulate accuracy and loss
-            running_loss = 0
-            running_corrects = 0
-            total = 0
-            # iterate over data
-            for inputs, labels in dataloaders[phase]:
+            running_loss = 0.0
+            running_corrects = 0.0
+            total = 0.0
+
+            # Iterate over the dataloader
+            for inputs, labels in tqdm(dataloaders[phase]):
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
@@ -90,10 +96,11 @@ def train(model, dataloaders, config):
                             loss = criterion(outputs, labels)
 
                         if phase == "train":
-                            if(loss.item() != loss.item()): # loss is nan.
+                            if loss.item() != loss.item(): # loss is nan. FIXME: this should not be allowed to happen!!
                                 loss.backward()
-                                # print("error")
+                                print("ERROR: loss is NaN!!!")
                                 continue
+
                             # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
                             scaler.scale(loss).backward()
                             # scaler.step() first unscales the gradients of the optimizer's assigned params.
@@ -104,9 +111,9 @@ def train(model, dataloaders, config):
                             # Update lr_scheduler
                             if scheduler_step_at == "step":
                                 lr_scheduler.step()
-                    # print(loss)
+
                     _, preds = torch.max(outputs, 1)
-                
+
                 # statistics
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += (preds == labels).sum().item()
@@ -131,7 +138,8 @@ def train(model, dataloaders, config):
                 early_stopping_ctr = 0
 
             if early_stopping_ctr == early_stopping_threshold:
-                early_stop = True
+                early_stop = True  # TODO: maybe we should consider the best validation accuracy to compare with
+                print(f"Early stopping: for {early_stopping_ctr} consecutive epochs the validation accuracy decreased")
                 break
 
             last_epoch_acc = epoch_acc
@@ -155,11 +163,13 @@ def train(model, dataloaders, config):
                     # Clean CUDA Memory
                     del inputs, outputs, labels
                     torch.cuda.empty_cache()
+
                     # Perform test and log results
-                    if config.dataset in ["PCam"]:
+                    if config.dataset in ["PCam"]:  # TODO if we use PCam consider if we want this
                         test_acc, _, _ = tester.test(model, dataloaders["test"], config)
                     else:
                         test_acc = best_acc
+
                     wandb.run.summary["best_test_accuracy"] = test_acc
                     wandb.log({"accuracy_test": test_acc}, step=epoch + 1)
 
