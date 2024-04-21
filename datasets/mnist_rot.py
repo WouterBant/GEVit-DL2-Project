@@ -66,6 +66,8 @@ class MNIST_rot(VisionDataset):
             self.targets = self.targets[mask]
             for target in self.targets:
                 assert target == 3 or target == 8
+            self.targets[self.targets == 3] = 0
+            self.targets[self.targets == 8] = 1
         
         # Reduce the training dataset size if specified by data_fraction sample a fraction of the data
         if stage == "train" and data_fraction < 1:
