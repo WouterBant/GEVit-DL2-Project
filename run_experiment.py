@@ -41,15 +41,15 @@ def main(_):
     #     )
 
     # initialize weight and bias
-    os.environ["WANDB_API_KEY"] = "26de9d19e20ea7e7f7352e5b36f139df8d145bc8"  # TODO change this if we are doing serious runs
+    os.environ["WANDB_API_KEY"] = "691777d26bb25439a75be52632da71d865d3a671"  # TODO change this if we are doing serious runs
     if not config.train:
         os.environ["WANDB_MODE"] = "dryrun"
 
     wandb.init(
-        project="rotMNIST_3_and_8_p4msa",
+        project="equivariant-attention",
         config=config,
         group=config["dataset"],
-        entity="ge_vit_DL2",
+        entity="equivatt_team",
     )
 
     # Define the device to be used and move model to that device
