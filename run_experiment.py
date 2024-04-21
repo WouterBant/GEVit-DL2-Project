@@ -29,7 +29,6 @@ def main(_):
 
     config = FLAGS.config
     print(config)
-    
     # Set the seed
     torch.manual_seed(config.seed)
     np.random.seed(config.seed)
