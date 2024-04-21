@@ -59,6 +59,8 @@ def get_config():
         # the path where the network parameters will be saved / loaded from.
         # The fraction of data to be used in the training and test set.
         data_fraction=1.0,
+        # For mnist only consider the numbers 3 and 8
+        only_3_and_8=False,
     )
     default_config = ml_collections.ConfigDict(default_config)
     return default_config

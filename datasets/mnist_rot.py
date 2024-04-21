@@ -38,7 +38,7 @@ class MNIST_rot(VisionDataset):
         "9 - nine",
     ]
 
-    def __init__(self, root, stage="train", transform=None, target_transform=None, download=False, data_fraction=1):
+    def __init__(self, root, stage="train", transform=None, target_transform=None, download=False, data_fraction=1, only_3_and_8=False):
         super().__init__(root, transform=transform, target_transform=target_transform)
         self.stage = stage  # training set or test set
     
@@ -59,6 +59,13 @@ class MNIST_rot(VisionDataset):
             
         # Load data
         self.data, self.targets = torch.load(os.path.join(self.processed_folder, data_file))
+
+        if only_3_and_8:
+            mask = (self.targets == 3) | (self.targets == 8)
+            self.data = self.data[mask]
+            self.targets = self.targets[mask]
+            for target in self.targets:
+                assert target == 3 or target == 8
         
         # Reduce the training dataset size if specified by data_fraction sample a fraction of the data
         if stage == "train" and data_fraction < 1:

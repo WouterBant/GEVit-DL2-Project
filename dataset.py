@@ -8,9 +8,11 @@ from collections import Counter
 from datasets import MNIST_rot, PCam
 
 
-def get_dataset(
-    config: ml_collections.ConfigDict, num_workers: int = 4, data_fraction = 1, data_root: str = "./data"
-) -> Dict[str, torch.utils.data.DataLoader]:
+def get_dataset(config: ml_collections.ConfigDict, 
+                num_workers: int = 4, 
+                data_fraction = 1, 
+                data_root: str = "./data",
+                ) -> Dict[str, torch.utils.data.DataLoader]:
     """
     Create dataloaders for the chosen datasets
     :return: {'train': training_loader, 'validation': validation_loader, 'test': test_loader}
@@ -71,9 +73,9 @@ def get_dataset(
     )
 
     if "mnist" in config.dataset.lower():
-        training_set = dataset(root=data_root, stage="train", download=True, transform=transform_train, data_fraction=data_fraction)
-        validation_set = dataset(root=data_root, stage="validation", download=True, transform=transform_test, data_fraction=data_fraction)  # Use test transform
-        test_set = dataset(root=data_root, stage="test", download=True, transform=transform_test, data_fraction=data_fraction)
+        training_set = dataset(root=data_root, stage="train", download=True, transform=transform_train, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)
+        validation_set = dataset(root=data_root, stage="validation", download=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)  # Use test transform
+        test_set = dataset(root=data_root, stage="test", download=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)
     else:   
         training_set = dataset(root=data_root, train=True, download=True, transform=transform_train, data_fraction=data_fraction)
         test_set = dataset(root=data_root, train=False, download=True, transform=transform_test, data_fraction=data_fraction)

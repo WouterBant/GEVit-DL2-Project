@@ -19,7 +19,6 @@ from path_handler import model_path
 FLAGS = flags.FLAGS
 config_flags.DEFINE_config_file("config", default="config.py")
 
-
 def main(_):
 
     if "absl.logging" in sys.modules:
@@ -29,7 +28,6 @@ def main(_):
         absl.logging.set_stderrthreshold("info")
 
     config = FLAGS.config
-    print(config)
 
     # Set the seed
     torch.manual_seed(config.seed)
