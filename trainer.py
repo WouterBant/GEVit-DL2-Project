@@ -71,7 +71,7 @@ def train(model, dataloaders, config):
             total = 0.0
 
             # Iterate over the dataloader
-            for inputs, labels in tqdm(dataloaders[phase]):
+            for inputs, labels in dataloaders[phase]:
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
