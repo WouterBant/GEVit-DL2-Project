@@ -10,6 +10,7 @@ This repository contains the source code accompanying the paper:
 - Make interpretability plots for [our demo](demo/demo_only_3_and_8.ipynb), make sure the code can easily be applied to other experiments. For inspiration see the original ViT paper
 - Decide what other experiments are interesting
 - Make an extension
+- Experiment on small scale with different hyperparameters for fast convergence. [This file](challenge.ipynb) can easily be used on google collab.
 
 ### Reproducing experimental results
 
