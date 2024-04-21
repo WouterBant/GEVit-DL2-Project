@@ -28,7 +28,8 @@ def main(_):
         absl.logging.set_stderrthreshold("info")
 
     config = FLAGS.config
-
+    print(config)
+    
     # Set the seed
     torch.manual_seed(config.seed)
     np.random.seed(config.seed)
