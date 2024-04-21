@@ -46,6 +46,7 @@ def get_model(config):
 
         # Create model
         if config.dataset == "rotMNIST":
+            num_classes = 2 if config.only_3_and_8 else 10
             model = models.GroupTransformer(
                 group=group,
                 in_channels=in_channels,
