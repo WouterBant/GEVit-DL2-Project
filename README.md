@@ -6,8 +6,10 @@ This repository contains the source code accompanying the paper:
  
  Code Author: [Kaifan Yang](https://github.com/ZJUCDSYangKaifan/) & [Ke Liu](https://github.com/zjuKeLiu)
 
-#### Abstract
-*Vision Transformer (ViT) has achieved remarkable performance in computer vision. However, positional encoding in ViT makes it substantially difficult to realize the equivariance, compared to models based on convolutional operations which are translation-equivariant. Initial attempts have been made on designing equivariant ViT but proved not effective in some cases in this paper. To address this issue, we propose a Group Equivariant Vision Transformer (GE-ViT) via a novel, effective positional encoding operation. We prove that GE-ViT meets all the theoretical requirements of an equivariant neural network. Comprehensive experiments are conducted on standard benchmark datasets. The empirical results demonstrate that GE-ViT has made significant improvement over non-equivariant self-attention networks*
+#### TODO's
+- Make interpretability plots for [our demo](demo/demo_only_3_and_8.ipynb), make sure the code can easily be applied to other experiments. For inspiration see the original ViT paper
+- Decide what other experiments are interesting
+- Make an extension
 
 ### Reproducing experimental results
 
