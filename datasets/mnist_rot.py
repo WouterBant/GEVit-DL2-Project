@@ -119,7 +119,8 @@ class MNIST_rot(VisionDataset):
     def _check_exists(self):
         return os.path.exists(
             os.path.join(self.processed_folder, self.training_file)
-        ) and os.path.exists(os.path.join(self.processed_folder, self.test_file))
+        ) and os.path.exists(os.path.join(self.processed_folder, self.test_file) 
+        ) and os.path.exists(os.path.join(self.processed_folder, self.validation_file)) 
 
     def download(self):
         """Download the MNIST data if it doesn't exist in processed_folder already."""
