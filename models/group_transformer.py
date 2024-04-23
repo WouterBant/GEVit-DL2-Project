@@ -173,12 +173,16 @@ class GroupTransformer(nn.Module):
         self.initialize_network(whitening_scale)
 
     @autocast()  # required for mixed-precision when training on multiple GPUs.
-    def forward(self, x):
+    def forward(self, x, show_features=False):
         batch_size = x.shape[0]
         out = self.input_dropout(x)
         out = self.lifting_self_attention(out)
         out = self.lifting_normalization(out)
         out = self.Activation()(out)
+        if show_features:
+            out = self.transformer[0](out)
+            out = self.transformer[1](out)
+            return out
         out = self.transformer(out)
         return out.sum(dim=(-2, -1)).max(-1).values.view(batch_size, self.num_classes)
 
