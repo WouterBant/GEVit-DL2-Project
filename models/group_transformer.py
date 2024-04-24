@@ -180,9 +180,11 @@ class GroupTransformer(nn.Module):
         out = self.lifting_normalization(out)
         out = self.Activation()(out)
         if show_features:
-            out = self.transformer[0](out)
-            out = self.transformer[1](out)
-            return out
+            output = []
+            for layer in self.transformer:
+                out = layer(out)
+                output.append(out)
+            return output
         out = self.transformer(out)
         return out.sum(dim=(-2, -1)).max(-1).values.view(batch_size, self.num_classes)
 
