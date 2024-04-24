@@ -59,8 +59,11 @@ class GroupTransformer(nn.Module):
         input_dropout_rate: float = 0.0,
         num_classes: int = 10,
         whitening_scale: float = 1.41421356,
+        return_attn_probs: bool = False,
     ):
         super().__init__()
+
+        self.return_attn_probs = return_attn_probs
 
         use_local_attention = patch_size is not None and patch_size > 0
 
@@ -126,6 +129,7 @@ class GroupTransformer(nn.Module):
             num_heads,
             max_pos_embedding,
             attention_dropout_rate,
+            return_attn_probs=self.return_attn_probs            
         )
         self.lifting_normalization = self.Norm(num_channels)
         in_channels = num_channels
@@ -176,6 +180,10 @@ class GroupTransformer(nn.Module):
     def forward(self, x, show_features=False):
         batch_size = x.shape[0]
         out = self.input_dropout(x)
+        if self.return_attn_probs: 
+            print('faka')
+            out, attn = self.lifting_self_attention(out)
+            return out, attn
         out = self.lifting_self_attention(out)
         out = self.lifting_normalization(out)
         out = self.Activation()(out)

@@ -20,6 +20,7 @@ class LiftLocalSelfAttention(torch.nn.Module):
         num_heads: int,
         patch_size: int,
         attention_dropout_rate: float,
+        return_attn_probs: bool = False,
     ):
         """
         Creates a lifting self-attention layer with local receptive fields.
@@ -45,6 +46,7 @@ class LiftLocalSelfAttention(torch.nn.Module):
         self.mid_channels = mid_channels
         self.out_channels = out_channels
         self.patch_size = patch_size
+        self.return_attn_probs = return_attn_probs
 
         # Define embeddings
         self.pos_encoding_dim = mid_channels // 2
@@ -111,7 +113,8 @@ class LiftLocalSelfAttention(torch.nn.Module):
             )
         )
 
-        return out
+        if self.return_attn_probs: return out, att_probs
+        else: return out
 
     def compute_attention_scores(
         self,
