@@ -181,7 +181,6 @@ class GroupTransformer(nn.Module):
         batch_size = x.shape[0]
         out = self.input_dropout(x)
         if self.return_attn_probs: 
-            print('faka')
             out, attn = self.lifting_self_attention(out)
             return out, attn
         out = self.lifting_self_attention(out)
