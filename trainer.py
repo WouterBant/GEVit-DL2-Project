@@ -35,7 +35,7 @@ def train(model, dataloaders, config):
     best_acc = 0.0
     best_loss = 999
 
-    last_epoch_acc = 999
+    best_epoch_acc = 0.0
     early_stopping_ctr = 0
     early_stopping_threshold = 10
     early_stop = False
@@ -132,17 +132,17 @@ def train(model, dataloaders, config):
             )
 
             # early stopping mechanism
-            if phase == "validation" and epoch_acc < last_epoch_acc:
-                early_stopping_ctr += 1
-            else:
-                early_stopping_ctr = 0
+            if phase == "validation": 
+                if epoch_acc > best_epoch_acc:
+                    best_epoch_acc = epoch_acc
+                    early_stopping_ctr = 0
+                else:
+                    early_stopping_ctr += 1
 
-            if early_stopping_ctr == early_stopping_threshold:
-                early_stop = True  # TODO: maybe we should consider the best validation accuracy to compare with
-                print(f"Early stopping: for {early_stopping_ctr} consecutive epochs the validation accuracy decreased")
-                break
-
-            last_epoch_acc = epoch_acc
+                if early_stopping_ctr == early_stopping_threshold:
+                    early_stop = True  # TODO: maybe we should consider the best validation accuracy to compare with
+                    print(f"Early stopping: for {early_stopping_ctr} consecutive epochs the validation accuracy decreased")
+                    break
 
             # If better validation accuracy, replace best weights and compute the test performance
             if phase == "validation" and epoch_acc >= best_acc:
