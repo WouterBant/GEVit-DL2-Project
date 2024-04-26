@@ -241,7 +241,7 @@ def main():
 
     # save model and log it
     model.load_state_dict(best_model)
-    torch.save(model.state_dict(), "saved/")
+    torch.save(model.state_dict(), "saved/model.pt")
     torch.save(model.state_dict(), os.path.join(wandb.run.dir, "model.pt"))
 
 
