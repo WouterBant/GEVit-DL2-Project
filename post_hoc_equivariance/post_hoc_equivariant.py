@@ -77,8 +77,9 @@ class PostHocEquivariant(nn.Module):
         """
         raise NotImplementedError()
     
-    def train(self):
-        super().train(True)
+    def train(self, b):
+        super().train(b)
+        if not b: return
         if not self.finetune_model:
             for param in self.model.parameters():
                 param.requires_grad = False
@@ -135,7 +136,7 @@ class PostHocEquivariantMostProbable(PostHocEquivariant):
         probs = torch.softmax(embeddings, dim=2)  # over the classes
         mle = torch.prod(probs, dim=1)  # over the different transformations
         mle = mle / mle.sum(dim=1, keepdim=True)  # normalize
-        logits = torch.log(mle) - torch.log(1-mle)  # convert to logits
+        logits = torch.log(mle+1e-8) - torch.log(1-mle+1e-8)  # convert to logits
         return logits
 
 
