@@ -19,30 +19,32 @@ class ScoringModel(nn.Module):
     
 
 class AttentionBlock(nn.Module):
-    """ Attention block used in the Transformer class below """
-    def __init__(self, embed_dim, hidden_dim, num_heads, dropout=0.0):
+    """ 
+    Attention block used in the Transformer class below
+    Note that there is no linear layer as this will break equivariance
+    """
+
+    def __init__(self, embed_dim, num_heads):
         super().__init__()
 
         self.layer_norm_1 = nn.LayerNorm(embed_dim)
-        self.attn = nn.MultiheadAttention(embed_dim, num_heads)
+        self.attn1 = nn.MultiheadAttention(embed_dim, num_heads)
         self.layer_norm_2 = nn.LayerNorm(embed_dim)
-        self.linear = nn.Sequential(
-            nn.Linear(embed_dim, hidden_dim),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim, embed_dim),
-            nn.Dropout(dropout),
-        )
+        self.act = nn.ReLU(),
+        self.attn2 = nn.MultiheadAttention(embed_dim, num_heads)
 
     def forward(self, x):
         inp_x = self.layer_norm_1(x)
-        x = x + self.attn(inp_x, inp_x, inp_x)[0]
-        x = x + self.linear(self.layer_norm_2(x))
+        x = x + self.attn1(inp_x, inp_x, inp_x)[0]
+        x = self.layer_norm_2(x)
+        x = self.act(x)
+        x = x + self.attn2(x)
         return x
 
 
 class Transformer(nn.Module):
     """ Transformer used for equivariant aggegration of latent representations """
+
     def __init__(self, embed_dim, hidden_dim, num_heads, num_layers, dropout=0.0):
         super().__init__()
 
