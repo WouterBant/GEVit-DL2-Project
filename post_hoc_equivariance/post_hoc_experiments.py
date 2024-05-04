@@ -235,7 +235,7 @@ def run_experiments(args):
     val_acc = evaluate(eq_model_learned_aggregation)
     test_acc = test(eq_model_learned_aggregation)
     accuracies.append((type(eq_model_learned_aggregation).__name__, val_acc, test_acc))
-
+    return accuracies
 
 def generate_filename(args):
     filename = f"model_{os.path.basename(args.model_path)}_rot_{args.n_rotations}_flips_{args.flips}_finetune_model_{args.finetune_model}_finetune_mlp_{args.finetune_mlp_head}.csv"
@@ -253,7 +253,6 @@ def main(args):
     filename = generate_filename(args)
     write_to_csv(filename, accuracies)
 
-    
 
 if __name__ == "__main__":
     args = parse_args()

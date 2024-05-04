@@ -135,7 +135,7 @@ class PostHocEquivariantMostProbable(PostHocEquivariant):
     def project_embeddings(self, embeddings):
         probs = torch.softmax(embeddings, dim=2)  # over the classes
         mle = torch.prod(probs, dim=1)  # over the different transformations
-        mle = mle / mle.sum(dim=1, keepdim=True)  # normalize
+        mle = mle / mle.sum(dim=1, keepdim=True)  # normalize TODO experiment with taking 1/num_classes as power
         logits = torch.log(mle+1e-8) - torch.log(1-mle+1e-8)  # convert to logits
         return logits
 

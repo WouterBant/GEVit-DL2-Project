@@ -30,15 +30,15 @@ class AttentionBlock(nn.Module):
         self.layer_norm_1 = nn.LayerNorm(embed_dim)
         self.attn1 = nn.MultiheadAttention(embed_dim, num_heads)
         self.layer_norm_2 = nn.LayerNorm(embed_dim)
-        self.act = nn.ReLU(),
+        self.act = nn.ReLU()
         self.attn2 = nn.MultiheadAttention(embed_dim, num_heads)
 
     def forward(self, x):
         inp_x = self.layer_norm_1(x)
         x = x + self.attn1(inp_x, inp_x, inp_x)[0]
         x = self.layer_norm_2(x)
-        x = self.act(x)
-        x = x + self.attn2(x)
+        x = self.act(x) 
+        x = x + self.attn2(x, x, x)[0]
         return x
 
 
@@ -49,7 +49,7 @@ class Transformer(nn.Module):
         super().__init__()
 
         self.transformer = nn.Sequential(
-            *(AttentionBlock(embed_dim, hidden_dim, num_heads, dropout=dropout) for _ in range(num_layers))
+            *(AttentionBlock(embed_dim, num_heads) for _ in range(num_layers))
         )
         self.dropout = nn.Dropout(dropout)
         self.cls_token = nn.Parameter(torch.randn(1, 1, embed_dim))

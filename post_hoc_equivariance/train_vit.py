@@ -1,12 +1,14 @@
+import sys
+sys.path.append('..')
 import torch
 from g_selfatt.utils import num_params
 from torchvision import transforms
-from datasets import MNIST_rot
+from datasets import MNIST_rot, PCam
 import torch.nn as nn
 import copy
 import os
 import wandb
-
+from collections import Counter
 
 # https://lightning.ai/docs/pytorch/stable/notebooks/course_UvA-DL/11-vision-transformer.html
 def img_to_patch(x, patch_size, flatten_channels=True):
@@ -125,15 +127,20 @@ class VisionTransformer(nn.Module):
 
 
 
-def main():
+def main(rotmnist=False):
+
     os.environ["WANDB_API_KEY"] = "691777d26bb25439a75be52632da71d865d3a671"  # TODO change this if we are doing serious runs
     wandb.init(
         project="non-equivariant-vit",
         entity="equivatt_team",
     )
 
-    data_mean = (0.1307,)
-    data_stddev = (0.3081,)
+    if rotmnist:
+        data_mean = (0.1307,)
+        data_stddev = (0.3081,)
+    else:
+        data_mean = (0.701, 0.538, 0.692)
+        data_stddev = (0.235, 0.277, 0.213)
     transform_train = transforms.Compose([
         transforms.RandomRotation(degrees=(-180, 180)),  # Random rotation
         transforms.RandomHorizontalFlip(),  # Random horizontal flip with a probability of 0.5
@@ -147,9 +154,15 @@ def main():
             transforms.Normalize(data_mean, data_stddev),
         ]
     )
-    train_set = MNIST_rot(root="../data", stage="train", download=True, transform=transform_train, data_fraction=1, only_3_and_8=False)
-    validation_set = MNIST_rot(root="../data", stage="validation", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
-    test_set = MNIST_rot(root="../data", stage="test", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
+
+    if rotmnist:
+        train_set = MNIST_rot(root="../data", stage="train", download=True, transform=transform_train, data_fraction=1, only_3_and_8=False)
+        validation_set = MNIST_rot(root="../data", stage="validation", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
+        test_set = MNIST_rot(root="../data", stage="test", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
+    else:
+        train_set = PCam(root="../data", train=True, download=True, transform=transform_train)
+        validation_set = PCam(root="../data", train=False, valid=True, download=True, transform=transform_test)
+        test_set = PCam(root="../data", train=False, download=True, transform=transform_test)
 
     train_loader = torch.utils.data.DataLoader(
         train_set,
@@ -160,7 +173,7 @@ def main():
     val_loader = torch.utils.data.DataLoader(
         validation_set,
         batch_size=128,
-        shuffle=True,
+        shuffle=False,
         num_workers=4,
     )
     test_loader = torch.utils.data.DataLoader(
@@ -171,14 +184,25 @@ def main():
     )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = VisionTransformer(embed_dim=64,
+    if rotmnist:
+        model = VisionTransformer(embed_dim=64,
+                                hidden_dim=512,
+                                num_heads=4,
+                                num_layers=6,
+                                patch_size=4,
+                                num_channels=1,
+                                num_patches=49,
+                                num_classes=10,
+                                dropout=0.1).to(device)
+    else:
+        model = VisionTransformer(embed_dim=64,
                             hidden_dim=512,
                             num_heads=4,
                             num_layers=6,
-                            patch_size=4,
-                            num_channels=1,
-                            num_patches=49,
-                            num_classes=10,
+                            patch_size=6,
+                            num_channels=3,
+                            num_patches=256,
+                            num_classes=2,
                             dropout=0.1).to(device)
                             
     print(f"Number of parameters in the model: {num_params(model)}")
@@ -188,7 +212,8 @@ def main():
     best_model = copy.deepcopy(model.state_dict())
     best_val_acc = 0
 
-    for epoch in range(500):
+    n_epochs = 500 if rotmnist else 250
+    for epoch in range(n_epochs):
         model.train()
         losses = []
         for inputs, labels in train_loader:
@@ -242,8 +267,12 @@ def main():
     wandb.run.summary["test_acc"] = test_acc
 
     # save model and log it
-    torch.save(model.state_dict(), "saved/model.pt")
-    torch.save(model.state_dict(), os.path.join(wandb.run.dir, "model.pt"))
+    if rotmnist:
+        torch.save(model.state_dict(), "saved/modelrotmnist.pt")
+        torch.save(model.state_dict(), os.path.join(wandb.run.dir, "modelrotmnist.pt"))
+    else:
+        torch.save(model.state_dict(), "saved/modelpcam.pt")
+        torch.save(model.state_dict(), os.path.join(wandb.run.dir, "modelpcam.pt"))
 
 
 if __name__ == "__main__":

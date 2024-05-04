@@ -12,7 +12,7 @@ class PCam(ImageFolder):
     """
 
     def __init__(
-        self, root, train=True, transform=None, target_transform=None, download=False, valid=False, data_fraction=0.001
+        self, root, train=True, transform=None, target_transform=None, download=False, valid=False, data_fraction=1
     ):
         if train and valid:
             raise ValueError("PCam 'valid' split available only when train=False.")
@@ -20,13 +20,14 @@ class PCam(ImageFolder):
         root = pathlib.Path(root) / "PCam"
         split = "train" if train else ("valid" if valid else "test")
         directory = root / split
+
         if not (root.exists() and directory.exists()):
             raise FileNotFoundError(
                 "Please download the PCam dataset. How to download it can be found in 'README.md'"
             )
-
+    
         super().__init__(root=directory, transform=transform, target_transform=target_transform)
-
+        
         # Reduce the dataset size if specified by data_fraction sample a fraction of the data
         if data_fraction < 1:
 
