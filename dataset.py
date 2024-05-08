@@ -4,6 +4,7 @@ import ml_collections
 import torch
 import torchvision
 from collections import Counter
+import numpy as np
 
 from datasets import MNIST_rot, PCam
 
@@ -82,6 +83,15 @@ def get_dataset(config: ml_collections.ConfigDict,
     else:   
         training_set = dataset(root=data_root, train=True, download=True, transform=transform_train, data_fraction=data_fraction)
         test_set = dataset(root=data_root, train=False, download=True, transform=transform_test, data_fraction=data_fraction)
+
+    if "rotmnist" in config.evaluate.lower():
+        validation_set = MNIST_rot(root=data_root, stage="validation", download=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)  # Use test transform
+    elif "mnist" in config.evaluate.lower():
+        validation_set = get_MNIST(root=data_root, train=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)
+    elif "both" in config.evaluate.lower():
+        mnist_set = MNIST_rot(root=data_root, stage="validation", download=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)  # Use test transform
+        rotmnist_set = get_MNIST(root=data_root, train=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)
+        validation_set = torch.utils.data.ConcatDataset([mnist_set, rotmnist_set])
 
     training_loader = torch.utils.data.DataLoader(
         training_set,

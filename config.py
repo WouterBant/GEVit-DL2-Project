@@ -7,6 +7,8 @@ def get_config():
         # General parameters
         dataset="",
         # The dataset to be used, e.g., MNIST.
+        evaluate="",
+        # The dataset to be evaluate on, option: MNIST, RotMNIST, and both. For other type is not effected
         model="",
         # The model to be used, e.g., p4sa.
         optimizer="",
