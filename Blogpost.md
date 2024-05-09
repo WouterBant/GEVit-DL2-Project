@@ -1,54 +1,70 @@
-## Group Equivariant Vision Transformer
+## E(2) Equivariant Vision Transformer
 
-This repository contains the source code accompanying the paper:
+[comment]: <Total blogpost should be a 20 minute read>
 
- [Group Equivariant Vision Transformer](https://openreview.net/forum?id=uVG_7x41bN),  UAI 2023.
- 
- Code Author: [Kaifan Yang](https://github.com/ZJUCDSYangKaifan/) & [Ke Liu](https://github.com/zjuKeLiu)
+#### Introduction
 
-#### TODO's
-- Make interpretability plots for [our demo](demo/demo_only_3_and_8.ipynb), make sure the code can easily be applied to other experiments. For inspiration see the original ViT paper
-- Decide what other experiments are interesting
-- Make an extension
-- Experiment on small scale with different hyperparameters for fast convergence. [This file](challenge.ipynb) can easily be used on google collab.
+[comment]: <Also add one paragraph of related work, should be similar to reviews on OpenReview.net>
 
-### Reproducing experimental results
+[comment]: <Find out how the positional encoding truly is implemented and how this causes the equivariance property>
 
-#### Command for running rot-MNIST
-```bash
-python run_experiment.py --config.dataset rotMNIST --config.model p4sa --config.norm_type LayerNorm --config.attention_type Local --config.activation_function Swish --config.patch_size 9 --config.dropout_att 0.1 --config.dropout_values 0.1 --config.whitening_scale 1.41421356 --config.epochs 300 --config.optimizer Adam --config.lr 0.001 --config.optimizer_momentum 0.9 --config.scheduler constants --config.sched_decay_steps='(1000,)' --config.sched_decay_factor 1.0 --config.weight_decay 0.0001 --config.batch_size 8 --config.device cuda --config.seed 0 --config.comment ''
-```
-#### running rot-MNIST with less datafraction
-```bash
-python run_experiment.py --config.dataset rotMNIST --config.model p4sa --config.norm_type LayerNorm --config.attention_type Local --config.activation_function Swish --config.patch_size 9 --config.dropout_att 0.1 --config.dropout_values 0.1 --config.whitening_scale 1.41421356 --config.epochs 300 --config.optimizer Adam --config.lr 0.001 --config.optimizer_momentum 0.9 --config.scheduler constants --config.sched_decay_steps='(1000,)' --config.sched_decay_factor 1.0 --config.weight_decay 0.0001 --config.batch_size 8 --config.device cuda --config.seed 0 --config.comment '' --config.data_fraction 0.1
-```
-#### running rot-MNIST with only the 3 and 8 images
-```bash
-python run_experiment.py --config.dataset rotMNIST --config.model p4msa --config.norm_type LayerNorm --config.attention_type Local --config.activation_function Swish --config.patch_size 9 --config.dropout_att 0.1 --config.dropout_values 0.1 --config.whitening_scale 1.41421356 --config.epochs 300 --config.optimizer Adam --config.lr 0.001 --config.optimizer_momentum 0.9 --config.scheduler constants --config.sched_decay_steps='(1000,)' --config.sched_decay_factor 1.0 --config.weight_decay 0.0001 --config.batch_size 8 --config.device cuda --config.seed 0 --config.comment '' --config.only_3_and_8 True
-```
-#### Command for running  CIFAR-10
-```bash
-python run_experiment.py --config.dataset CIFAR10 --config.model mz2sa --config.norm_type LayerNorm --config.attention_type Local --config.activation_function Swish --config.patch_size 5 --config.dropout_att 0.1 --config.dropout_values 0.0 --config.whitening_scale 1.41421356 --config.epochs 350 --config.optimizer SGD --config.lr=0.01 --config.optimizer_momentum 0.9 --config.scheduler linear_warmup_cosine --config.sched_decay_steps='(1000,)' --config.sched_decay_factor 1.0 --config.weight_decay 0.0001 --config.batch_size 24 --config.device cuda --config.seed 0 --config.comment ""
-```
+[comment]: < Mention the difference between E(2) and SE(2) equivarance>
 
-#### Command for running PatchCamelyon
-```bash
-python run_experiment.py --config.dataset PCam --config.model p4sa --config.norm_type LayerNorm --config.attention_type Local --config.activation_function Swish --config.patch_size 5 --config.dropout_att 0.1 --config.dropout_values 0.1 --config.whitening_scale 1.41421356 --config.epochs 100 --config.optimizer SGD --config.lr 0.01 --config.optimizer_momentum 0.9 --config.scheduler linear_warmup_cosine --config.sched_decay_steps='(1000,)' --config.sched_decay_factor 1.0 --config.weight_decay 0.0001 --config.batch_size 16 --config.device cuda --config.seed 0 --config.comment ""
-```
-# running PatchCamelyon with less datafraction
-```bash
-python run_experiment.py --config.dataset PCam --config.model p4sa --config.norm_type LayerNorm --config.attention_type Local --config.activation_function Swish --config.patch_size 5 --config.dropout_att 0.1 --config.dropout_values 0.1 --config.whitening_scale 1.41421356 --config.epochs 100 --config.optimizer SGD --config.lr 0.01 --config.optimizer_momentum 0.9 --config.scheduler linear_warmup_cosine --config.sched_decay_steps='(1000,)' --config.sched_decay_factor 1.0 --config.weight_decay 0.0001 --config.batch_size 16 --config.device cuda --config.seed 0 --config.comment "" --config.data_fraction 0.001
-```
+Traditional Convolutional Neural Networks (CNNs) exhibit translation equivariance but lack equivariance to rotations in input data. \cite{cohen2016group} introduced the first equivariant neural network, which augmented the existing translation equivariance of CNNs by incorporating translation to discrete groups.
 
-### Note
-Our code was modified based on the code presented in paper A. We mainly modified the “construct_relative_positions” function of the g_selfatt/groups/SE2.py and g_selfatt/g_selfatt/groups/E2.py module in [GSA-Nets](https://github.com/dwromero/g_selfatt) which corresponds to the part of position encoding. 
+\cite{vaswani2017attention} introduced transformers, a model that gained significant prominence in Natural Language Processing (NLP). Recognizing the potential of this architecture in computer vision, \cite{dosovitskiy2020image} proposed the original vision transformer architecture. However, a limitation of their approach is necessitating positional encodings for each pixel, losing the translation or any other form of equivariance. Despite this drawback, vision transformers demonstrated noteworthy performance, achieving state-of-the-art results in various domains. 
 
-From the experimental results, there are differences between the results in our paper and those in [GSA-Nets](https://openreview.net/forum?id=JkfYjnOEo6M) and we suspect that this is caused by differences in the experimental environment. The paper of [GSA-Nets](https://openreview.net/forum?id=JkfYjnOEo6M) uses NVIDIA TITAN RTX, while we used NVIDIA Tesla A100. To ensure a fair comparison, we re-ran the code of [GSA-Nets](https://openreview.net/forum?id=JkfYjnOEo6M) on our hardware. 
+Acknowledging the potential benefits of equivariance, \cite{romero2020group} proposed Group Equivariant Stand Alone Self-Attention Networks (GSA-nets), which incorporated a different positional encoding strategy and modifications to the attention mechanism to ensure equivariance.
 
-The experimental results of rot-MNIST and PatchCamelyon are similar to those presented in the paper, but the results of CIFAR-10 differ significantly from the paper. It is worth mentioning that in the [GSA-Nets](https://openreview.net/forum?id=JkfYjnOEo6M), the authors mentioned that they did not use automatic mixed precision when conducting experiments on the CIFAR-10 datasets. However, when we tried to run the experiments without using automatic mixed precision, we found that at the beginning of the training, the loss would become 'nan', and not converge. When we used automatic mixed precision, the loss converged to a smaller value and the model achieved high accuracy in prediction. The results presented in our paper were obtained using automatic mixed precision. Therefore, the experimental results presented in the table may not be consistent with those reported in the original [GSA-Nets](https://openreview.net/forum?id=JkfYjnOEo6M) paper. The experimental logs can be found in the folder "CIFAR10_EXP_LOG".
+[comment]: <Dont forget to add the research question>
 
-### Contributions of each author to the paper
 
-[Kaifan Yang](https://github.com/ZJUCDSYangKaifan) & [Ke Liu](https://github.com/zjuKeLiu) led the project and made significant contributions, including proposing the ideas, designing the model architecture, and conducting the experiments.
-### Acknowledgements
-*We gratefully acknowledge the authors of GSA-Nets paper David W. Romero and Jean-Baptiste Cordonnier.  They patiently answered and elaborated on the experimental details of the paper [GSA-Nets](https://openreview.net/forum?id=JkfYjnOEo6M).*
+#### Weaknesses and strengths of proposed method
+
+The authors of the original equivaraint vision transformer mention that their proposed positional encodings for the (pixels or patches) results in an E(2) equivariant network. This has as an advantage that this results in consistent results and predictions even for rotated images. This is one very strong strength as such properties are very important in medical cell analysis where you do not want different predictions for the same cells by only rotating an image.
+
+Furthermore, typically one of the advantages of equivaraint networks is that they use weight sharing and generalise faster (Hier nog een bron voor vinden). This is something that the authors didn't focus on, however this advantage is something that we want to look at.
+
+One of the main weaknesses that we seeked to explore with their proposed method are the following. 
+1. In the original paper, the author mentions that using the group equivariant vision transformer significantly outperforms non-equivariant self-attention networks. We doubt this claim and believe that retraining a Vision-Transformer and making it rotation equivariant ad-hoc could significantly improve performance. (Note that one downside of this approach is that it is not translation invariant right, can this be changed using e.g. the weird attention they used???)
+2. Next up, one of the weaknesses of the original GE-VIT is it training and inference time. In the original paper, the authors mention that they use the well-known ViT, however this is not the case. The original well-known ViT and the original GSA net paper were published in the same journal on the same date. The Vision Transformer they use applies local self-attention for every single pixel which makes the model translation equivariant however also computationally very expensive. This can be made more computationally efficient by dividing the images in patches and apply the equivarent things to those patches. Their proposed architecture uses for MNIST and the lifting layer and rotation of 90 degrees the following input. ([8, 9, 4, 28, 28, 9, 9]) = (batch size, num_heads, the 4 rotations, height, width, patch size, patch size) where patch size refers to the local neighborhood that should be taken into account for attention. Aka for a single pixel it computes attention to 81 different other pixels and then you do this for each 28*28*9*4=28244 pixels making a total of 81*28244=2,286,144 attention computations just for the lifting layer. Having this many attention computations causes training and inference time to be slow for even relatively low resolution images.
+
+3. A third weakness that we discovered has to do with the implementation that the authors used to train and evaluate the performance of their models. When expecting their source code, we found that the authors used the test set during training for evaluating the performance of their method. In the end after training, the epoch with the best performance on the test set was reported as the result. This is not a good practice as this causes overfitting on the test set, while a test set should only be used to predict performance on the final model.
+4. The original paper states that their approach is steerable because the positional encoding lives in a continuous space. This however appears to be incorrect because rotations of 45 degrees will get different positional encodings than for 90 degrees. See results in the google docs. This is likely caused by the interpolation effect.
+
+#### Our novel contribution
+
+Some of the contributions that we want to add to this paper are already briefly discussed in the section above as we want to improve upon all the weaknesses mentioned. Furthermore, we also propose a novel architecture which utilizes a combination of a group-equivariant CNN together with a transformer and see if this is able to outperform their baseline
+
+- The ViT we propose uses a patch size (the normal one) of 4x4. So 49 patches in total. Now you compute attention globally with respect to the other patches and yourself. If all other settings are the same we have that you do this for 49*9*4=1764 patches in total, making a total of 49*1764=86,436 attention computations for the lifting layer. This should make it about 26 times faster, so for rotmnist 10 hours/26=23 minutes.
+
+- Maybe do interpretablility analyses but I feel like we should not do that.
+
+[comment]: <How do we want to visualise attention as in the original ViT paper (okey ik ga die paper wel even bestuderen Figure 6 dus kijken)>
+
+
+
+#### Results
+
+
+#### Conclusion
+
+
+#### Individual contributions
+
+Below the contributions for each team member are noted
+
+Wouter Bant:
+
+
+Colin Bot:
+
+
+Jasper Eppink:
+Contributed mainly to the writing of the blogpost. As written the introduction and the weaknesses. Also aided with thinking about the programming challenges and the novelties that we wanted to research. 
+
+
+Clio Feng
+
+
+Floris Six Dijkstra
