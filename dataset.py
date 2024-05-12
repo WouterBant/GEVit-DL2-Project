@@ -105,7 +105,7 @@ def get_dataset(config: ml_collections.ConfigDict,
             num_workers=num_workers,
         )
         dataloaders["validation"] = val_loader
-    elif "mnist" in config.dataset.lower():
+    elif "rotmnist" in config.dataset.lower():
         # The test loader is the same as the validation loader
         dataloaders["validation"] = torch.utils.data.DataLoader(
             validation_set,

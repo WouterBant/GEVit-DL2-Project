@@ -179,11 +179,13 @@ class GroupTransformer(nn.Module):
     @autocast()  # required for mixed-precision when training on multiple GPUs.
     def forward(self, x, show_features=False):
         batch_size = x.shape[0]
+        print("input", x.shape)
         out = self.input_dropout(x)
         if self.return_attn_probs: 
             out, attn = self.lifting_self_attention(out)
             return out, attn
         out = self.lifting_self_attention(out)
+        print("lifted", out.shape)
         out = self.lifting_normalization(out)
         out = self.Activation()(out)
         if show_features:
@@ -193,6 +195,7 @@ class GroupTransformer(nn.Module):
                 output.append(out)
             return output
         out = self.transformer(out)
+        print("transformer", out.shape)
         return out.sum(dim=(-2, -1)).max(-1).values.view(batch_size, self.num_classes)
 
     def transformer_layer(self, *, max_pos_embedding, crop_size, in_channels, out_channels):

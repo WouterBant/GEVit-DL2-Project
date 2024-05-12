@@ -93,17 +93,22 @@ class LiftLocalSelfAttention(torch.nn.Module):
 
         # Compute attention scores.
         att_scores = self.compute_attention_scores(x)
+        print("att_scores", att_scores.shape)
 
         # Normalize to obtain probabilities.
         shape = att_scores.shape
-        att_probs = self.dropout_attention(
+        att_probs = self.dropout_attention(  # B, num_heads, num_transforms, h, w, patch_size, patch_size
             torch.nn.Softmax(dim=-1)(att_scores.view(*shape[:-2], -1)).view(shape)
         )
+        print("att_probs", att_probs.shape)
 
         # Compute value projections.
         v = self.unfold(self.value(x).view(b, -1, h, w)).view(
             b, self.mid_channels, self.num_heads, self.patch_size, self.patch_size, h, w
         )
+        print("patch_size", self.patch_size)
+        print("num_heads", self.num_heads)
+        print("mid_channels", self.mid_channels)
 
         # Re-weight values via attention and map to output dimension.
         v = torch.einsum("bhgijkl,bchklij->bchgij", att_probs, v)
@@ -112,6 +117,7 @@ class LiftLocalSelfAttention(torch.nn.Module):
                 b, self.mid_channels * self.num_heads, self.group.num_elements, w, h
             )
         )
+        print("out", out.shape)
 
         if self.return_attn_probs: return out, att_probs
         else: return out

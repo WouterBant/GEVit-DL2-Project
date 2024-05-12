@@ -1,0 +1,9 @@
+Model,Validation Accuracy,Test Accuracy
+VisionTransformer,29.75,28.724
+PostHocEquivariantMean,97.4,97.526
+PostHocEquivariantMax,97.35,97.28
+PostHocEquivariantSum,97.4,97.526
+PostHocEquivariantMostProbable,10.0,9.998
+PostHocMostCertain,96.3,96.26
+PostHocLearnedScoreAggregation,94.9,94.988
+PostHocLearnedAggregation,96.65,96.16
