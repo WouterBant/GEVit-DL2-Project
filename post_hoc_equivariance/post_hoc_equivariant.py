@@ -118,6 +118,7 @@ class PostHocEquivariantSum(PostHocEquivariant):
     def project_embeddings(self, embeddings):
         combined_embeddings = embeddings.sum(dim=1)  # B, n_dim_repr
         logits = self.model.mlp_head(combined_embeddings)  # just the pretrained one for now
+        print(logits)
         return logits
 
 
@@ -132,11 +133,12 @@ class PostHocEquivariantMostProbable(PostHocEquivariant):
         logits = logits.view(B, T, -1)  # B, T, n_classes
         return logits  # here the logits are the embeddings we use
 
-    def project_embeddings(self, embeddings):
-        probs = torch.softmax(embeddings, dim=2)  # over the classes
-        mle = torch.prod(probs, dim=1)  # over the different transformations
-        mle = mle / mle.sum(dim=1, keepdim=True)  # normalize TODO experiment with taking 1/num_classes as power
-        logits = torch.log(mle+1e-8) - torch.log(1-mle+1e-8)  # convert to logits
+    def project_embeddings(self, embeddings, epsilon=1e-8):
+        B, T, n_classes = embeddings.shape  #
+        probs = torch.softmax(embeddings / (T//2), dim=2)  # apply softmax over the class dimension and smooth
+        mle = torch.prod(probs, dim=1)  # calculate the product of probabilities over transformations
+        mle = mle / mle.sum(dim=1, keepdim=True)  # normalize probabilities
+        logits = torch.log((mle + epsilon) / (1 - mle + epsilon))  # convert to logits
         return logits
 
 
