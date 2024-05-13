@@ -167,54 +167,54 @@ def run_experiments(args):
     accuracies.append((type(model).__name__, val_acc, test_acc))
 
     # mean pooling
-    set_seed(42)
-    model = get_non_equivariant_vit(args.model_path, device)
-    eq_model_mean = PostHocEquivariantMean(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
-    if finetune:
-        eq_model_mean = train(eq_model_mean, n_epochs=25)
-    val_acc = evaluate(eq_model_mean)
-    test_acc = test(eq_model_mean)
-    accuracies.append((type(eq_model_mean).__name__, val_acc, test_acc))
+    # set_seed(42)
+    # model = get_non_equivariant_vit(args.model_path, device)
+    # eq_model_mean = PostHocEquivariantMean(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
+    # if finetune:
+    #     eq_model_mean = train(eq_model_mean, n_epochs=25)
+    # val_acc = evaluate(eq_model_mean)
+    # test_acc = test(eq_model_mean)
+    # accuracies.append((type(eq_model_mean).__name__, val_acc, test_acc))
 
-    # max pooling
-    set_seed(42)
-    model = get_non_equivariant_vit(args.model_path, device)
-    eq_model_max = PostHocEquivariantMax(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
-    if finetune:
-        eq_model_max = train(eq_model_max, n_epochs=25)
-    val_acc = evaluate(eq_model_max)
-    test_acc = test(eq_model_max)
-    accuracies.append((type(eq_model_max).__name__, val_acc, test_acc))
+    # # max pooling
+    # set_seed(42)
+    # model = get_non_equivariant_vit(args.model_path, device)
+    # eq_model_max = PostHocEquivariantMax(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
+    # if finetune:
+    #     eq_model_max = train(eq_model_max, n_epochs=25)
+    # val_acc = evaluate(eq_model_max)
+    # test_acc = test(eq_model_max)
+    # accuracies.append((type(eq_model_max).__name__, val_acc, test_acc))
 
-    # summing latent dimensions
-    set_seed(42)
-    model = get_non_equivariant_vit(args.model_path, device)
-    eq_model_sum = PostHocEquivariantSum(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
-    if finetune:
-        eq_model_sum = train(eq_model_sum, n_epochs=25)
-    val_acc = evaluate(eq_model_sum)
-    test_acc = test(eq_model_sum)
-    accuracies.append((type(eq_model_sum).__name__, val_acc, test_acc))
+    # # summing latent dimensions
+    # set_seed(42)
+    # model = get_non_equivariant_vit(args.model_path, device)
+    # eq_model_sum = PostHocEquivariantSum(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
+    # if finetune:
+    #     eq_model_sum = train(eq_model_sum, n_epochs=25)
+    # val_acc = evaluate(eq_model_sum)
+    # test_acc = test(eq_model_sum)
+    # accuracies.append((type(eq_model_sum).__name__, val_acc, test_acc))
 
-    # product of class probabilities
-    set_seed(42)
-    model = get_non_equivariant_vit(args.model_path, device)
-    eq_model_most_probable = PostHocEquivariantMostProbable(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
-    if finetune:
-        eq_model_most_probable = train(eq_model_most_probable, n_epochs=25)
-    val_acc = evaluate(eq_model_most_probable)
-    test_acc = test(eq_model_most_probable)
-    accuracies.append((type(eq_model_most_probable).__name__, val_acc, test_acc))
+    # # product of class probabilities
+    # set_seed(42)
+    # model = get_non_equivariant_vit(args.model_path, device)
+    # eq_model_most_probable = PostHocEquivariantMostProbable(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
+    # if finetune:
+    #     eq_model_most_probable = train(eq_model_most_probable, n_epochs=25)
+    # val_acc = evaluate(eq_model_most_probable)
+    # test_acc = test(eq_model_most_probable)
+    # accuracies.append((type(eq_model_most_probable).__name__, val_acc, test_acc))
 
-    # take transformation with highest certainty for class
-    set_seed(42)
-    model = get_non_equivariant_vit(args.model_path, device)
-    eq_model_most_certain = PostHocMostCertain(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
-    if finetune:
-        eq_model_most_certain = train(eq_model_most_certain, n_epochs=25)
-    val_acc = evaluate(eq_model_most_certain)
-    test_acc = test(eq_model_most_certain)
-    accuracies.append((type(eq_model_most_certain).__name__, val_acc, test_acc))
+    # # take transformation with highest certainty for class
+    # set_seed(42)
+    # model = get_non_equivariant_vit(args.model_path, device)
+    # eq_model_most_certain = PostHocMostCertain(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
+    # if finetune:
+    #     eq_model_most_certain = train(eq_model_most_certain, n_epochs=25)
+    # val_acc = evaluate(eq_model_most_certain)
+    # test_acc = test(eq_model_most_certain)
+    # accuracies.append((type(eq_model_most_certain).__name__, val_acc, test_acc))
 
     # learn to score latent dimensions
     set_seed(42)

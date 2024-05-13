@@ -8,3 +8,6 @@ Details for the files that don't have stats in the name:
 
 - modelpcamgood.pt: this is our vit. Doesnt perform well on test set. Data augmentation is random k*90 degree rotation and random flips. https://wandb.ai/ge_vit_DL2/non-equivariant-vit-pcam/runs/nzc3ib95?nw=nwuserwouterbant
 
+- lessdatamnistourvit.pt: our vit trained as the other one on rotmnist but now only on 10% of the data
+
+- model where we do it for their model (same as above) now we train for 500 epochs though https://wandb.ai/ge_vit_DL2/their_rotmnistmodel_less_data_mnist?nw=nwuserwouterbant. This is the only one with 500 epochs

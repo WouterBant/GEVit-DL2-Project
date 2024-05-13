@@ -83,9 +83,11 @@ class PostHocEquivariant(nn.Module):
         if not self.finetune_model:
             for param in self.model.parameters():
                 param.requires_grad = False
+            print("succeeded1")
         if self.finetune_mlp_head:
             for param in self.model.mlp_head.parameters():
                 param.requires_grad = True
+            print("succeeded 2")
 
 
 class PostHocEquivariantMean(PostHocEquivariant):
@@ -134,7 +136,7 @@ class PostHocEquivariantMostProbable(PostHocEquivariant):
         return logits  # here the logits are the embeddings we use
 
     def project_embeddings(self, embeddings, epsilon=1e-8):
-        B, T, n_classes = embeddings.shape  #
+        B, T, n_classes = embeddings.shape  # NOTE T is not temperature but turns out to give stable gradients that way
         probs = torch.softmax(embeddings / (T//2), dim=2)  # apply softmax over the class dimension and smooth
         mle = torch.prod(probs, dim=1)  # calculate the product of probabilities over transformations
         mle = mle / mle.sum(dim=1, keepdim=True)  # normalize probabilities
