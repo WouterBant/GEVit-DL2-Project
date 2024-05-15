@@ -174,6 +174,347 @@ All results in the table below were trained on Mnist and evaluated on RotMnist w
     </tbody>
 </table>
 
+
+##### Results on Mnist with 10% of the data
+
+In the table below, the results on Mnist with 10% of the data is shown. These experiments are identical to those above except for using less data. In Deep Learning, equivariant methods by design typically need less data as these apply weight sharing. We test this by looking at accuracy when only 10% of the training data is used.
+
+<table>
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th colspan = 2>No finetuning</th>
+            <th colspan = 2>MLP finetuning</th>
+            <th colspan = 2> Model finetuning </th>
+        </tr>
+        <tr>
+            <th></th>
+            <th >Validation Accuracy</th>
+            <th >Test Accuracy</th>
+            <th >Validation Accuracy</th>
+            <th >Test Accuracy</th>
+            <th >Validation Accuracy</th>
+            <th >Test Accuracy</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td> </td>
+            <td colspan=6, align="center">  Baseline original models </td>
+        </tr>
+        <tr>
+            <td>GSA - Nets</td>
+            <td> </td>
+            <td> </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+        </tr>
+        <tr>
+            <td>GE-ViT </td>
+            <td> </td>
+            <td> </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+        </tr>
+        <tr>
+            <td> </td>
+            <td colspan=6, align="center">  Our proposed architectures </td>
+        </tr>
+<tr>
+<td>VisionTransformer</td>
+<td align="right">86.25</td>
+<td align="right">86.208</td>
+<td align="right">86.25</td>
+<td align="right">86.208</td>
+<td align="right">86.25</td>
+<td align="right">86.208</td>
+</tr>
+<tr>
+<td>PostHocEquivariantMean</td>
+<td align="right">88.5</td>
+<td align="right">88.994</td>
+<td align="right">88.75</td>
+<td align="right">89.196</td>
+<td align="right">89.3</td>
+<td align="right">89.734</td>
+</tr>
+<tr>
+<td>PostHocEquivariantMax</td>
+<td align="right">88.15</td>
+<td align="right">88.734</td>
+<td align="right">88.4</td>
+<td align="right">88.956</td>
+<td align="right">88.9</td>
+<td align="right">89.406</td>
+</tr>
+<tr>
+<td>PostHocEquivariantSum</td>
+<td align="right">88.5</td>
+<td align="right">88.994</td>
+<td align="right">88.75</td>
+<td align="right">89.196</td>
+<td align="right">89.3</td>
+<td align="right">89.734</td>
+</tr>
+<tr>
+<td>PostHocEquivariantMostProbable</td>
+<td align="right">88.6</td>
+<td align="right">89.028</td>
+<td align="right">88.9</td>
+<td align="right">89.12</td>
+<td align="right">86.75</td>
+<td align="right">87.19</td>
+</tr>
+<tr>
+<td>PostHocMostCertain</td>
+<td align="right">87.1</td>
+<td align="right">87.884</td>
+<td align="right">87.75</td>
+<td align="right">88.336</td>
+<td align="right">88.5</td>
+<td align="right">88.872</td>
+</tr>
+<tr>
+<td>PostHocLearnedScoreAggregation</td>
+<td align="right">80.3</td>
+<td align="right">80.754</td>
+<td align="right">78.95</td>
+<td align="right">79.096</td>
+<td align="right">81.85</td>
+<td align="right">82.27</td>
+</tr>
+<tr>
+<td>PostHocLearnedAggregation</td>
+<td align="right">82.25</td>
+<td align="right">82.656</td>
+<td align="right">82.15</td>
+<td align="right">82.634</td>
+<td align="right">84.5</td>
+<td align="right">84.438</td>
+</tr>
+    </tbody>
+</table>
+
+##### Results on Rotation mnist
+
+Besides looking at the 90 degree rotation Mnist we also explored the results when rotating the images 16 times. Results are shown in the table below.
+
+<table>
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th colspan = 2>No finetuning</th>
+            <th colspan = 2>MLP finetuning</th>
+            <th colspan = 2> Model finetuning </th>
+        </tr>
+        <tr>
+            <th></th>
+            <th >Validation Accuracy</th>
+            <th >Test Accuracy</th>
+            <th >Validation Accuracy</th>
+            <th >Test Accuracy</th>
+            <th >Validation Accuracy</th>
+            <th >Test Accuracy</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td> </td>
+            <td colspan=6, align="center">  Baseline original models </td>
+        </tr>
+        <tr>
+            <td>GSA - Nets</td>
+            <td> </td>
+            <td> </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+        </tr>
+        <tr>
+            <td>GE-ViT </td>
+            <td> </td>
+            <td> </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+        </tr>
+        <tr>
+            <td> </td>
+            <td colspan=6, align="center">  Our proposed architectures </td>
+        </tr>
+<tr>
+<td>VisionTransformer</td>
+<td align="right">97.55</td>
+<td align="right">97.234</td>
+<td align="right">97.55</td>
+<td align="right">97.234</td>
+<td align="right">97.55</td>
+<td align="right">97.234</td>
+</tr>
+<tr>
+<td>PostHocEquivariantMean</td>
+<td align="right">98</td>
+<td align="right">98.074</td>
+<td align="right">98.2</td>
+<td align="right">98.202</td>
+<td align="right">98.7</td>
+<td align="right">98.242</td>
+</tr>
+<tr>
+<td>PostHocEquivariantMax</td>
+<td align="right">97.8</td>
+<td align="right">97.818</td>
+<td align="right">98.1</td>
+<td align="right">98.116</td>
+<td align="right">98.65</td>
+<td align="right">98.314</td>
+</tr>
+<tr>
+<td>PostHocEquivariantSum</td>
+<td align="right">98</td>
+<td align="right">98.074</td>
+<td align="right">98.2</td>
+<td align="right">98.202</td>
+<td align="right">98.7</td>
+<td align="right">98.244</td>
+</tr>
+<tr>
+<td>PostHocEquivariantMostProbable</td>
+<td align="right">97.9</td>
+<td align="right">98.094</td>
+<td align="right">98.15</td>
+<td align="right">98.14</td>
+<td align="right">98.45</td>
+<td align="right">98.178</td>
+</tr>
+<tr>
+<td>PostHocMostCertain</td>
+<td align="right">97.75</td>
+<td align="right">97.628</td>
+<td align="right">97.95</td>
+<td align="right">97.936</td>
+<td align="right">98.4</td>
+<td align="right">98.098</td>
+</tr>
+<tr>
+<td>PostHocLearnedScoreAggregation</td>
+<td align="right">96.6</td>
+<td align="right">96.46</td>
+<td align="right">95.65</td>
+<td align="right">95.478</td>
+<td align="right">96.6</td>
+<td align="right">96.46</td>
+</tr>
+<tr>
+<td>PostHocLearnedAggregation</td>
+<td align="right">96.8</td>
+<td align="right">96.748</td>
+<td align="right">96.65</td>
+<td align="right">96.328</td>
+<td align="right">96.8</td>
+<td align="right">96.748</td>
+</tr>
+    </tbody>
+</table>
+
+##### Results on PCAM
+
+Besides evaluating our proposed equivariant models on only Mnist, we also trained and evaluated it on the Patchcamelyon dataset. In these results equivariance was tested......??????
+
+In these experiments there is only one type of finetuning which is......
+
+In the table below results for our proposed models and the benchmark scores are denoted.
+
+<table>
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th colspan = 2>No finetuning</th>
+            <th colspan = 2>finetuning</th>
+        </tr>
+        <tr>
+            <th></th>
+            <th >Validation Accuracy</th>
+            <th >Test Accuracy</th>
+            <th >Validation Accuracy</th>
+            <th >Test Accuracy</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td> </td>
+            <td colspan=4, align="center">  Baseline original models </td>
+        </tr>
+        <tr>
+            <td>GSA - Nets</td>
+            <td> </td>
+            <td> </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+        </tr>
+        <tr>
+            <td>GE-ViT </td>
+            <td> </td>
+            <td> </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+        </tr>
+        <tr>
+            <td> </td>
+            <td colspan=4, align="center">  Our proposed architectures </td>
+        </tr>
+<tr>
+<td>VisionTransformer</td>
+<td align="right">87.75939941</td>
+<td align="right">86.60583496</td>
+<td align="right">87.75939941</td>
+<td align="right">86.60583496</td>
+</tr>
+<tr>
+<td>PostHocEquivariantMean</td>
+<td align="right">88.07067871</td>
+<td align="right">87.26806641</td>
+<td align="right">90.39916992</td>
+<td align="right">87.51525879</td>
+</tr>
+<tr>
+<td>PostHocEquivariantMax</td>
+<td align="right">86.66992188</td>
+<td align="right">86.1541748</td>
+<td align="right">90.07873535</td>
+<td align="right">86.93847656</td>
+</tr>
+<tr>
+<td>PostHocEquivariantSum</td>
+<td align="right">88.29345703</td>
+<td align="right">87.43286133</td>
+<td align="right">90.33203125</td>
+<td align="right">87.14599609</td>
+</tr>
+<tr>
+<td>PostHocEquivariantMostProbable</td>
+<td align="right">88.07067871</td>
+<td align="right">87.26806641</td>
+<td align="right">90.37475586</td>
+<td align="right">87.14294434</td>
+</tr>
+<tr>
+<td>PostHocMostCertain</td>
+<td align="right">87.89672852</td>
+<td align="right">87.10632324</td>
+<td align="right">90.0390625</td>
+<td align="right">86.98120117</td>
+</tr>
+    </tbody>
+</table>
+
+
 #### Conclusion
 
 
