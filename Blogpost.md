@@ -46,6 +46,133 @@ Some of the contributions that we want to add to this paper are already briefly 
 
 #### Results
 
+Here I have created tables for the results of our experiments. The results can be divided into 4 sections. In which different ways of training are used
+
+
+##### Results on Mnist 
+
+All results in the table below were trained on Mnist and evaluated on RotMnist which is Mnist with 90 degree rotations.
+
+<table>
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th colspan = 2>No finetuning</th>
+            <th colspan = 2>MLP finetuning</th>
+            <th colspan = 2> Model finetuning </th>
+        </tr>
+        <tr>
+            <th></th>
+            <th >Validation Accuracy</th>
+            <th >Test Accuracy</th>
+            <th >Validation Accuracy</th>
+            <th >Test Accuracy</th>
+            <th >Validation Accuracy</th>
+            <th >Test Accuracy</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td> </td>
+            <td colspan=6, align="center">  Baseline original models </td>
+        </tr>
+        <tr>
+            <td>GSA - Nets</td>
+            <td> </td>
+            <td> </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+        </tr>
+        <tr>
+            <td>GE-ViT </td>
+            <td> </td>
+            <td> </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+            <td align="right"> - </td>
+        </tr>
+        <tr>
+            <td> </td>
+            <td colspan=6, align="center">  Our proposed architectures </td>
+        </tr>
+<tr>
+<td>VisionTransformer</td>
+<td align="right">29.75</td>
+<td align="right">28.724</td>
+<td align="right">29.75</td>
+<td align="right">28.724</td>
+<td align="right">29.75</td>
+<td align="right">28.724</td>
+</tr>
+<tr>
+<td>PostHocEquivariantMean</td>
+<td align="right">43.5</td>
+<td align="right">43.314</td>
+<td align="right">84.9</td>
+<td align="right">85.496</td>
+<td align="right">97.4</td>
+<td align="right">97.526</td>
+</tr>
+<tr>
+<td>PostHocEquivariantMax</td>
+<td align="right">41.65</td>
+<td align="right">41.888</td>
+<td align="right">86.75</td>
+<td align="right">87.128</td>
+<td align="right">97.35</td>
+<td align="right">97.28</td>
+</tr>
+<tr>
+<td>PostHocEquivariantSum</td>
+<td align="right">43.5</td>
+<td align="right">43.314</td>
+<td align="right">84.9</td>
+<td align="right">85.496</td>
+<td align="right">97.4</td>
+<td align="right">97.526</td>
+</tr>
+<tr>
+<td>PostHocEquivariantMostProbable</td>
+<td align="right">30.05</td>
+<td align="right">29.298</td>
+<td align="right">10</td>
+<td align="right">9.998</td>
+<td align="right">10</td>
+<td align="right">9.998</td>
+</tr>
+<tr>
+<td>PostHocMostCertain</td>
+<td align="right">47.95</td>
+<td align="right">48.992</td>
+<td align="right">82.95</td>
+<td align="right">82.522</td>
+<td align="right">96.3</td>
+<td align="right">96.26</td>
+</tr>
+<tr>
+<td>PostHocLearnedScoreAggregation</td>
+<td align="right">83.8</td>
+<td align="right">83.28</td>
+<td align="right">87.35</td>
+<td align="right">86.996</td>
+<td align="right">94.9</td>
+<td align="right">94.988</td>
+</tr>
+<tr>
+<td>PostHocLearnedAggregation</td>
+<td align="right">92.75</td>
+<td align="right">92.426</td>
+<td align="right">92.75</td>
+<td align="right">92.408</td>
+<td align="right">96.65</td>
+<td align="right">96.16</td>
+</tr>
+        <tr>
+    </tbody>
+</table>
 
 #### Conclusion
 
