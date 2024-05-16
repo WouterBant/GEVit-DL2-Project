@@ -1,4 +1,3 @@
-
 ## E(2) Equivariant Vision Transformer
 
 [comment]: <Total blogpost should be a 20 minute read>
@@ -110,127 +109,9 @@ We conduct the following experiments:
 
 
 #### 1. Training and evaluating on rotation MNIST
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="492"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" id="tableContainer"><table style="border-collapse:collapse;width:100%"><thead><tr><th style="text-align:center;border:1px solid #ddd;padding:8px;cursor:pointer" onmouseover="this.style.color='green'" onmouseout="this.style.color=''">Model</th><th colspan="2" style="text-align:center;border:1px solid #ddd;padding:8px">No finetuning</th><th colspan="2" style="text-align:center;border:1px solid #ddd;padding:8px">MLP finetuning</th><th colspan="2" style="text-align:center;border:1px solid #ddd;padding:8px">Model finetuning</th></tr><tr><th style="text-align:center;border:1px solid #ddd;padding:8px"/><th style="text-align:center;border:1px solid #ddd;padding:8px">Validation Accuracy</th><th style="text-align:center;border:1px solid #ddd;padding:8px">Test Accuracy</th><th style="text-align:center;border:1px solid #ddd;padding:8px">Validation Accuracy</th><th style="text-align:center;border:1px solid #ddd;padding:8px">Test Accuracy</th><th style="text-align:center;border:1px solid #ddd;padding:8px">Validation Accuracy</th><th style="text-align:center;border:1px solid #ddd;padding:8px">Test Accuracy</th></tr></thead><tbody><tr><td colspan="7" align="center" style="border:1px solid #ddd;padding:8px">Baseline original models</td></tr><tr><td style="border:1px solid #ddd;padding:8px">GSA - Nets</td><td style="border:1px solid #ddd;padding:8px">-</td><td style="border:1px solid #ddd;padding:8px">97.97</td><td style="border:1px solid #ddd;padding:8px">-</td><td style="border:1px solid #ddd;padding:8px">-</td><td style="border:1px solid #ddd;padding:8px">-</td><td style="border:1px solid #ddd;padding:8px">-</td></tr><tr><td style="border:1px solid #ddd;padding:8px">GE-ViT</td><td style="border:1px solid #ddd;padding:8px">-</td><td style="border:1px solid #ddd;padding:8px">98.01</td><td style="border:1px solid #ddd;padding:8px">-</td><td style="border:1px solid #ddd;padding:8px">-</td><td style="border:1px solid #ddd;padding:8px">-</td><td style="border:1px solid #ddd;padding:8px">-</td></tr><tr><td colspan="7" align="center" style="border:1px solid #ddd;padding:8px">Our proposed architectures</td></tr></tbody></table></div></foreignObject></svg>
 
 
-<table>
-    <thead>
-        <tr>
-            <th>Model</th>
-            <th colspan = 2>No finetuning</th>
-            <th colspan = 2>MLP finetuning</th>
-            <th colspan = 2> Model finetuning </th>
-        </tr>
-        <tr>
-            <th></th>
-            <th >Validation Accuracy</th>
-            <th >Test Accuracy</th>
-            <th >Validation Accuracy</th>
-            <th >Test Accuracy</th>
-            <th >Validation Accuracy</th>
-            <th >Test Accuracy</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td> </td>
-            <td colspan=6, align="center">  Baseline original models </td>
-        </tr>
-        <tr>
-            <td>GSA - Nets</td>
-            <td> </td>
-            <td> </td>
-            <td align="right"> - </td>
-            <td align="right"> - </td>
-            <td align="right"> - </td>
-            <td align="right"> - </td>
-        </tr>
-        <tr>
-            <td>GE-ViT </td>
-            <td> </td>
-            <td> </td>
-            <td align="right"> - </td>
-            <td align="right"> - </td>
-            <td align="right"> - </td>
-            <td align="right"> - </td>
-        </tr>
-        <tr>
-            <td> </td>
-            <td colspan=6, align="center">  Our proposed architectures </td>
-        </tr>
-<tr>
-<td>VisionTransformer</td>
-<td align="right">97.55</td>
-<td align="right">97.234</td>
-<td align="right">97.55</td>
-<td align="right">97.234</td>
-<td align="right">97.55</td>
-<td align="right">97.234</td>
-</tr>
-<tr>
-<td>PostHocEquivariantMean</td>
-<td align="right">98</td>
-<td align="right">98.074</td>
-<td align="right">98.2</td>
-<td align="right">98.202</td>
-<td align="right">98.7</td>
-<td align="right">98.242</td>
-</tr>
-<tr>
-<td>PostHocEquivariantMax</td>
-<td align="right">97.8</td>
-<td align="right">97.818</td>
-<td align="right">98.1</td>
-<td align="right">98.116</td>
-<td align="right">98.65</td>
-<td align="right">98.314</td>
-</tr>
-<tr>
-<td>PostHocEquivariantSum</td>
-<td align="right">98</td>
-<td align="right">98.074</td>
-<td align="right">98.2</td>
-<td align="right">98.202</td>
-<td align="right">98.7</td>
-<td align="right">98.244</td>
-</tr>
-<tr>
-<td>PostHocEquivariantMostProbable</td>
-<td align="right">97.9</td>
-<td align="right">98.094</td>
-<td align="right">98.15</td>
-<td align="right">98.14</td>
-<td align="right">98.45</td>
-<td align="right">98.178</td>
-</tr>
-<tr>
-<td>PostHocMostCertain</td>
-<td align="right">97.75</td>
-<td align="right">97.628</td>
-<td align="right">97.95</td>
-<td align="right">97.936</td>
-<td align="right">98.4</td>
-<td align="right">98.098</td>
-</tr>
-<tr>
-<td>PostHocLearnedScoreAggregation</td>
-<td align="right">96.6</td>
-<td align="right">96.46</td>
-<td align="right">95.65</td>
-<td align="right">95.478</td>
-<td align="right">96.6</td>
-<td align="right">96.46</td>
-</tr>
-<tr>
-<td>PostHocLearnedAggregation</td>
-<td align="right">96.8</td>
-<td align="right">96.748</td>
-<td align="right">96.65</td>
-<td align="right">96.328</td>
-<td align="right">96.8</td>
-<td align="right">96.748</td>
-</tr>
-    </tbody>
-</table>
  
 #### 2. Training on normal MNIST and evaluating on rotation MNIST.
 <table>
@@ -563,6 +444,12 @@ We conduct the following experiments:
 Explain this and make figure to display architecture.
 
 ## Concluding Remarks
+In this blogpost, we evaluated exisiting and proposed new methods to make pretrained models equivariant with little to no finetuning. We find that mean pooling of the latent dimensions is the most robust method that performs well across all experiments. As expected, the performance increased further with finetuning the last layer and even more with finetuning the whole model. We show that this simple approach outperforms equivariant attention models and doesn't change the original training of these models.
+
+It should be noted that this approach makes the model only equivariant to global transformations. Also, since the pretrained models were not translation equivariant the final models are also not translation equivariant. In other words these models are only equivaraiant to the O(2) and/or SO(2) groups. However, if one would apply these methods on CNNs, that are translation equivariant by nature, you would obtain equivariance to the E(2) and/or SE(2) groups. We encourage researchers investigating the effectiveness of these methods when applied to CNNs and in general to different datasets.
+
+We strongly believe that true equivariant models will be able to achieve higher performance (with less data) than non equivariant models, when enough compute is used. However, we think that when only limited compute is available for training the post hoc methods we show here can be a solution as they can be applied directly on pretrained models and robustly improve performance by significant amounts.
+
 Discuss main conclusions and limitations
 
 #### Introduction
