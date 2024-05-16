@@ -3,6 +3,45 @@
 
 [comment]: <Total blogpost should be a 20 minute read>
 
+### Wouter Bant, Colin Bot, Jasper Eppink, Clio Feng, Floris Six Dijkstra
+
+---
+In this blogpost, we aim to propose and evaluate alternative methods for the equivariant attention models discussed in (TODO cite). 
+
+In particular, in this blogpost, we present:
+1. Evaluate existing and novel methods to make non equivariant (attention) models, equivariant by combining the predictions of different transformations, that reflect inductive biases, of the input.
+2. Evaluate a novel method to make modern ViTs (TODO cite google) equivariant by combining equivariant CNNs (TODO cite) to project patches to latent embeddings that will be uses as input to the equivariant vision transformer model used by (TODO cite paper).
+3. Visualize different layers of equivariant and non equivariant, with the aim to help researchers better understand these models. 
+---
+
+## The Importance of Equivariant Models
+In this section we motivate why one should be interested in equivariant models and discuss prior work.
+
+Here we should display the difference in outputs for an equivariant and non equivariant model. TODO make a slider that rotates an input image for rotation mnist and that displays the output for both.
+
+## Vision Tranformers (ViTs) and Equivariance
+In this section we discuss modern ViTs and older equivariant versions.
+
+Here we should display how positional encoding makes the model equivariant.
+
+## Discussion of (TODO cite paper)
+Here we say that these methods are comp. expensive and some of our findings. eg steerable but also artifact like differences (show this with a figure). quickly mention we evaluate on validation set a increase batch size (and proportionally learning rate) because of computational constraints. Display the results we got for their methods here and say we use the reported numbers of the best method in the following parts of the blogpost. 
+
+## Post Hoc Equivariant Models
+In this section, we discuss the work of (TODO cite basu) and present and evaluate novel methods to make pretrained non equivariant models equivariant with not to little finetuning.
+
+Here we should make a picture that displays the idea of post hoc augmentation
+
+Also, here clio needs to put the math (but keep it short).
+
+Also we should display all results or post hoc equivariant models here.
+
+## Introducing Equivariant Modern ViTs
+Explain this and make figure to display architecture.
+
+## Concluding Remarks
+Discuss main conclusions and limitations
+
 #### Introduction
 
 [comment]: <Also add one paragraph of related work, should be similar to reviews on OpenReview.net>
