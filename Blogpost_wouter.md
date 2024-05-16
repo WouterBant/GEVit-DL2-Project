@@ -563,6 +563,12 @@ We conduct the following experiments:
 Explain this and make figure to display architecture.
 
 ## Concluding Remarks
+In this blogpost, we evaluated exisiting and proposed new methods to make pretrained models equivariant with little to no finetuning. We find that mean pooling of the latent dimensions is the most robust method that performs well across all experiments. As expected, the performance increased further with finetuning the last layer and even more with finetuning the whole model. We show that this simple approach outperforms equivariant attention models and doesn't change the original training of these models.
+
+It should be noted that this approach makes the model only equivariant to global transformations. Also, since the pretrained models were not translation equivariant the final models are also not translation equivariant. In other words these models are only equivaraiant to the O(2) and/or SO(2) groups. However, if one would apply these methods on CNNs, that are translation equivariant by nature, you would obtain equivariance to the E(2) and/or SE(2) groups. We encourage researchers investigating the effectiveness of these methods when applied to CNNs and in general to different datasets.
+
+We strongly believe that true equivariant models will be able to achieve higher performance (with less data) than non equivariant models, when enough compute is used. However, we think that when only limited compute is available for training the post hoc methods we show here can be a solution as they can be applied directly on pretrained models and robustly improve performance by significant amounts.
+
 Discuss main conclusions and limitations
 
 #### Introduction
