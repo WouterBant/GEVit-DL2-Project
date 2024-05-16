@@ -1,6 +1,109 @@
+
 ## E(2) Equivariant Vision Transformer
 
 [comment]: <Total blogpost should be a 20 minute read>
+
+### Wouter Bant, Colin Bot, Jasper Eppink, Clio Feng, Floris Six Dijkstra
+
+---
+In this blogpost, we aim to propose and evaluate alternative methods for the equivariant attention models discussed in (TODO cite). 
+
+In particular, in this blogpost, we present:
+1. Evaluate existing and novel methods to make non equivariant (attention) models, equivariant by combining the predictions of different transformations, that reflect inductive biases, of the input.
+2. Evaluate a novel method to make modern ViTs (TODO cite google) equivariant by combining equivariant CNNs (TODO cite) to project patches to latent embeddings that will be uses as input to the equivariant vision transformer model used by (TODO cite paper).
+3. Visualize different layers of equivariant and non equivariant, with the aim to help researchers better understand these models. 
+---
+
+## The Importance of Equivariant Models
+In this section we motivate why one should be interested in equivariant models and discuss prior work.
+
+Here we should display the difference in outputs for an equivariant and non equivariant model. TODO make a slider that rotates an input image for rotation mnist and that displays the output for both.
+
+## Vision Tranformers (ViTs) and Equivariance
+In this section we discuss modern ViTs and older equivariant versions.
+
+Here we should display how positional encoding makes the model equivariant.
+
+## Discussion of (TODO cite paper)
+Here we say that these methods are comp. expensive and some of our findings. eg steerable but also artifact like differences (show this with a figure). quickly mention we evaluate on validation set a increase batch size (and proportionally learning rate) because of computational constraints. Display the results we got for their methods here and say we use the reported numbers of the best method in the following parts of the blogpost. 
+
+## Post Hoc Equivariant Models
+In this section, we discuss the work of (TODO cite basu) and present and evaluate novel methods to make pretrained non equivariant models equivariant with not to little finetuning.
+
+Here we should make a picture that displays the idea of post hoc augmentation
+
+Also, here clio needs to put the math (but keep it short).
+
+Also we should display all results or post hoc equivariant models here.
+
+### Math
+#### Equivariant Finetunning 
+ 
+Similar to the idea of Basu et al. (2023), which they proposed a finetuning method called equituning that starts with potentially non-equivariant model M and produces a model $M_G$ that is equivariant to a group G. 
+
+Given a set $\chi$, group action of G on X is defined as $\Gamma X$: $G \times \chi$ -> $\chi$. We write $\Gamma X(g,x)$ simply as gx for bervity. A model M: X -> Y is equivariant to G under the group action of G on X and Y if M(gx) = g(M(x)) for all g $\in$ G, x $\in$ $\chi$. This essentially means that any group transformation g to the input $\Gamma X(g,x)$ should reflect with an equivalent group transformation of the output  $\Gamma Y(g,M(x))$.
+
+Equituning converts a pretrained model into an equivariant version by minimizing the distance of features obtained from pretrained and equivariant models. Here, we proposed three methods. The output of an equituned model is given by
+
+- $ x $ as the input image.
+- $ g $ as a transformation in the group $ G $.
+- $ g^{-1} $ as a inverse of the transformation in the group $ G $.
+- $ M(x) $ as the output logits obtained from the original input image $ x $.
+- $ M_G(x) $ as the output logits obtained from the transformed input image $ gx $.
+
+Mean Pooling: $$ M_G(x) = \frac{\sum_{g \in G}{g^{-1}M(gx)}}{|G|} $$
+
+Max Pooling: $$ M_G(x) = \max_{g \in G}{g^{-1}M(gx)} $$
+
+Summing latent dimensions: $$ M_G(x) = \sum_{g \in G}{g^{-1}M(gx)} $$
+
+#### Most Probable and Certain
+
+Instead of combining the embedding to get the final logits, in this approach, we computes logits for each transformation independently. Here, we propose two method to select the final logits.
+
+Select Most Probable: combines them to get the final logits.
+
+$$  M_G(x) = \log \left( \prod_{g \in G}\text{softmax}{(M(gx))} \right) $$
+
+Selct Most Certain: selects the transformation with the highest probability for each class. It then selects the logits corresponding to these highest probabilities.
+
+$$  M_G(x) = \text{arg max}_{g \in G} (\text{softmax}{(M(gx))}) $$
+
+#### Score Aggregation
+Similar to the idea of λ-equitune in (Sourya Basu (2023). Efficient Equivariant Transfer Learning from Pretrained Models), revolves around recognizing that, within a pretrained model M, features M(gx) derived from fixed x are not uniformly crucial across all transformations g $\in$ G. Let λ(gx) denote the significance weight assigned to feature M(gx) for g $\in$ G, x $\in$ X. Assuming a finite G, as in Basu et al. (2023), λ : X → $R^+$ is predefined. The λ-equituned model, denoted as $M^{λ} {G}$, aims to minimize:
+
+$$\min_{ M_G^{λ}(x)} \sum_{g \in G} || λ(gx) M(gx) -  M_G^{λ}(g,x)||^{2}$$
+
+subject to:
+
+$$ M_G^{λ}(gx) = g M_G^{λ}(x)$$ 
+for all g $\in$ G.
+
+The solution to the above equation, referred to as λ-equitune, is given by:
+
+$$ M_G^{λ}(x) = \frac{\sum_{g \in G}^{|G|}{g^{-1}λ(gx)M(gx)}}{\sum_{g \in G}{λ(gx)}}$$
+
+#### Transformer Aggregation
+
+This method aggregates the embeddings using the transformer and then passes the combined embeddings through the model's MLP head to get the final logits. Since the transformer operations (layer normalization, multi-head attention, and feed-forward networks) do not depend on the order of embeddings, the aggregated result is independent of the transformations applied to the input. The final logits are produced by passing the aggregated embeddings through the MLP head. This process is invariant to the transformations since it operates on the aggregated embeddings, which represent the transformed input space.
+
+   $$
+   M_G(x) = \text{Mlp}(\text{Transformer}(M(gx))), g\in G
+   $$
+
+Since the aggregation model (transformer) is designed to handle sequences of embeddings in an order-invariant manner (due to the self-attention mechanism), the output should remain consistent under the same group transformations applied to the input and the output:
+
+$$
+ M_G(x) = g( M_G(x))
+$$
+
+Therefore, the `PostHocLearnedAggregation` model is equivariant by design because the transformer aggregation maintains the equivariance property through its self-attention mechanism and the consistent application of transformations across the input space. The use of the class token ensures that the final output logits are derived in a manner that respects the input transformations.
+
+## Introducing Equivariant Modern ViTs
+Explain this and make figure to display architecture.
+
+## Concluding Remarks
+Discuss main conclusions and limitations
 
 #### Introduction
 
@@ -10,20 +113,20 @@
 
 [comment]: < Mention the difference between E(2) and SE(2) equivarance, answer: SE(2) equivariance also adds reflection equivariance.>
 
-Equivariance, a fundamental property in various domains including image processing [Krizhevsky and Ilya 2012](https://proceedings.neurips.cc/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html), 3D point cloud analysis [Li, Chen and Lee 2018](https://openaccess.thecvf.com/content_cvpr_2018/html/Li_SO-Net_Self-Organizing_Network_CVPR_2018_paper.html), chemistry [Faber et al.](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.117.135502), astronomy [Ntampaka 2016](https://iopscience.iop.org/article/10.3847/0004-637X/831/2/135/meta), and economics [Qin et al. 2022](https://proceedings.neurips.cc/paper_files/paper/2022/hash/730d61b4d9ff794a028fa3a25b9b891d-Abstract-Conference.html), has garnered significant attention in the realm of machine learning. Traditional Convolutional Neural Networks (CNNs) exhibit translation equivariance but lack equivariance to rotations in input data. [Cohen and Welling 2016](https://proceedings.mlr.press/v48/cohenc16.html) introduced the first equivariant neural network, which augmented the existing translation equivariance of CNNs by incorporating translation to discrete groups.
+Equivariance, a fundamental property in various domains including image processing [Krizhevsky and Ilya 2012](https://proceedings.neurips.cc/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html), 3D point cloud analysis [Li, Chen and Lee 2018](https://openaccess.thecvf.com/content_cvpr_2018/html/Li_SO-Net_Self-Organizing_Network_CVPR_2018_paper.html), chemistry [Faber et al.](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.117.135502), astronomy [Ntampaka 2016](https://iopscience.iop.org/article/10.3847/0004-637X/831/2/135/meta), and economics [Qin et al. 2022](https://proceedings.neurips.cc/paper_files/paper/2022/hash/730d61b4d9ff794a028fa3a25b9b891d-Abstract-Conference.html), has garnered significant attention in the realm of machine learning. Traditional Convolutional Neural Networks (CNNs) exhibit translation equivariance but lack equivariance to rotations in input data. [Cohen and Welling 2016](https://proceedings.mlr.press/v48/cohenc16.html) introduced the first equivariant neural network, which augmented the existing translation equivariance of CNNs by incorporating translation into discrete groups.
 
 In the realm of Natural Language Processing (NLP), [Vaswani et al. 2017](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html) introduced transformers, a model that gained significant prominence in its field. Recognizing the potential of this architecture in computer vision, [dosovitskiy et al. 2020](https://arxiv.org/abs/2010.11929) proposed the original vision transformer architecture. However, a limitation of their approach is necessitating positional encodings for each pixel patch, losing the translation or any other form of equivariance. Despite this drawback, vision transformers demonstrated noteworthy performance, achieving state-of-the-art results in various domains. To allow ViTs to be equivariant to affine groups, new positional encodings need to be proposed to replace the original positional encodings. 
 
-Iniitial attempts have been made to modify the self-attention to become equivariant. Some examples include ...... The most promising work in the field is proposed by [Romero et al. 2020](https://proceedings.mlr.press/v119/romero20a.html). They proposed Group Equivariant Stand Alone Self-Attention Networks (GSA-nets), which incorporated a different positional encoding strategy and modifications to the attention mechanism to ensure equivariance.
+Initial attempts have been made to modify the self-attention to become equivariant. Some examples include ...... The most promising work in the field is proposed by [Romero et al. 2020](https://proceedings.mlr.press/v119/romero20a.html). They proposed Group Equivariant Stand Alone Self-Attention Networks (GSA-nets), which incorporated a different positional encoding strategy and modifications to the attention mechanism to ensure equivariance.
 
 [comment]: <Dont forget to add the research question> 
 
 
-#### Weaknesses and strengths of proposed method
+#### Weaknesses and strengths of the proposed method
 
-The authors of the original equivaraint vision transformer mention that their proposed positional encodings for the (pixels or patches) results in an E(2) equivariant network. This has as an advantage that this results in consistent results and predictions even for rotated images. This is one very strong strength as such properties are very important in medical cell analysis where you do not want different predictions for the same cells by only rotating an image.
+The authors of the original equivariant vision transformer mention that their proposed positional encodings for the (pixels or patches) result in an E(2) equivariant network. This has the advantage that this results in consistent results and predictions even for rotated images. This is one very strong strength as such properties are very important in medical cell analysis where you do not want different predictions for the same cells by only rotating an image.
 
-Furthermore, typically one of the advantages of equivaraint networks is that they use weight sharing and generalise faster (Hier nog een bron voor vinden). This is something that the authors didn't focus on, however this advantage is something that we want to look at.
+Furthermore, typically one of the advantages of equivariant networks is that they use weight sharing and generalize faster (Hier nog een bron voor vinden). This is something that the authors didn't focus on, however this advantage is something that we want to look at.
 
 One of the main weaknesses that we seeked to explore with their proposed method are the following. 
 1. In the original paper, the author mentions that using the group equivariant vision transformer significantly outperforms non-equivariant self-attention networks. We doubt this claim and believe that retraining a Vision-Transformer and making it rotation equivariant ad-hoc could significantly improve performance. (Note that one downside of this approach is that it is not translation invariant right, can this be changed using e.g. the weird attention they used???)
@@ -32,7 +135,16 @@ One of the main weaknesses that we seeked to explore with their proposed method 
 3. A third weakness that we discovered has to do with the implementation that the authors used to train and evaluate the performance of their models. When expecting their source code, we found that the authors used the test set during training for evaluating the performance of their method. In the end after training, the epoch with the best performance on the test set was reported as the result. This is not a good practice as this causes overfitting on the test set, while a test set should only be used to predict performance on the final model.
 4. The original paper states that their approach is steerable because the positional encoding lives in a continuous space. This however appears to be incorrect because rotations of 45 degrees will get different positional encodings than for 90 degrees. See results in the google docs. This is likely caused by the interpolation effect.
 
-#### Our novel contribution
+#### Our contributions
+
+Our main contributions can be divided into three parts:
+
+- First, we investigate and propose methods to make pretrained, non-equivariant models, equivariant by combining either the latent embeddings or probabilities from transformed input images (TODO make picture that shows this). We compare this model with the equivariant ViT proposed in (TODO citation) on rotation MNIST. Also, we investigate its performance on rotation MNIST when the non-equivariant model was only trained on (normal) MNIST. Furthermore, we compare the models by only training on 10% of the dataset.
+
+- Second, we propose a way of making the modern ViT equivariant. For this, we make use of the model by (TODO cite the paper), where the inputs are not the raw pixels but patch embeddings coming from an equivariant CNN (TODO cite).
+
+- Third, we visualize the equivariant ViT proposed by (TODO cite) to gain insight into the learned positional encoding and other layers that make the model equivariant.
+
 
 Some of the contributions that we want to add to this paper are already briefly discussed in the section above as we want to improve upon all the weaknesses mentioned. Furthermore, we also propose a novel architecture which utilizes a combination of a group-equivariant CNN together with a transformer and see if this is able to outperform their baseline
 
@@ -46,12 +158,11 @@ Some of the contributions that we want to add to this paper are already briefly 
 
 #### Results
 
-Here I have created tables for the results of our experiments. The results can be divided into 4 sections. In which different ways of training are used
+##### Post Hoc Equivariance
 
+In this section we display results for pretrained models that are made equivariant by combining the results from different test time augmentations.
 
-##### Results on Mnist 
-
-All results in the table below were trained on Mnist and evaluated on RotMnist which is Mnist with 90 degree rotations.
+###### Training on MNIST and evaluating on rotation MNIST 
 
 <table>
     <thead>
