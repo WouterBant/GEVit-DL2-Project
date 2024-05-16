@@ -36,6 +36,69 @@ Also, here clio needs to put the math (but keep it short).
 
 Also we should display all results or post hoc equivariant models here.
 
+### Math
+#### Equivariant Finetunning 
+ 
+Similar to the idea of Basu et al. (2023), which they proposed a finetuning method called equituning that starts with potentially non-equivariant model M and produces a model $M_G$ that is equivariant to a group G. 
+
+Given a set $\chi$, group action of G on X is defined as $\Gamma X$: $G \times \chi$ -> $\chi$. We write $\Gamma X(g,x)$ simply as gx for bervity. A model M: X -> Y is equivariant to G under the group action of G on X and Y if M(gx) = g(M(x)) for all g $\in$ G, x $\in$ $\chi$. This essentially means that any group transformation g to the input $\Gamma X(g,x)$ should reflect with an equivalent group transformation of the output  $\Gamma Y(g,M(x))$.
+
+Equituning converts a pretrained model into an equivariant version by minimizing the distance of features obtained from pretrained and equivariant models. Here, we proposed three methods. The output of an equituned model is given by
+
+- $ x $ as the input image.
+- $ g $ as a transformation in the group $ G $.
+- $ g^{-1} $ as a inverse of the transformation in the group $ G $.
+- $ M(x) $ as the output logits obtained from the original input image $ x $.
+- $ M_G(x) $ as the output logits obtained from the transformed input image $ gx $.
+
+Mean Pooling: $$ M_G(x) = \frac{\sum_{g \in G}{g^{-1}M(gx)}}{|G|} $$
+
+Max Pooling: $$ M_G(x) = \max_{g \in G}{g^{-1}M(gx)} $$
+
+Summing latent dimensions: $$ M_G(x) = \sum_{g \in G}{g^{-1}M(gx)} $$
+
+#### Most Probable and Certain
+
+Instead of combining the embedding to get the final logits, in this approach, we computes logits for each transformation independently. Here, we propose two method to select the final logits.
+
+Select Most Probable: combines them to get the final logits.
+
+$$  M_G(x) = \log \left( \prod_{g \in G}\text{softmax}{(M(gx))} \right) $$
+
+Selct Most Certain: selects the transformation with the highest probability for each class. It then selects the logits corresponding to these highest probabilities.
+
+$$  M_G(x) = \text{arg max}_{g \in G} (\text{softmax}{(M(gx))}) $$
+
+#### Score Aggregation
+Similar to the idea of λ-equitune in (Sourya Basu (2023). Efficient Equivariant Transfer Learning from Pretrained Models), revolves around recognizing that, within a pretrained model M, features M(gx) derived from fixed x are not uniformly crucial across all transformations g $\in$ G. Let λ(gx) denote the significance weight assigned to feature M(gx) for g $\in$ G, x $\in$ X. Assuming a finite G, as in Basu et al. (2023), λ : X → $R^+$ is predefined. The λ-equituned model, denoted as $M^{λ} {G}$, aims to minimize:
+
+$$\min_{ M_G^{λ}(x)} \sum_{g \in G} || λ(gx) M(gx) -  M_G^{λ}(g,x)||^{2}$$
+
+subject to:
+
+$$ M_G^{λ}(gx) = g M_G^{λ}(x)$$ 
+for all g $\in$ G.
+
+The solution to the above equation, referred to as λ-equitune, is given by:
+
+$$ M_G^{λ}(x) = \frac{\sum_{g \in G}^{|G|}{g^{-1}λ(gx)M(gx)}}{\sum_{g \in G}{λ(gx)}}$$
+
+#### Transformer Aggregation
+
+This method aggregates the embeddings using the transformer and then passes the combined embeddings through the model's MLP head to get the final logits. Since the transformer operations (layer normalization, multi-head attention, and feed-forward networks) do not depend on the order of embeddings, the aggregated result is independent of the transformations applied to the input. The final logits are produced by passing the aggregated embeddings through the MLP head. This process is invariant to the transformations since it operates on the aggregated embeddings, which represent the transformed input space.
+
+   $$
+   M_G(x) = \text{Mlp}(\text{Transformer}(M(gx))), g\in G
+   $$
+
+Since the aggregation model (transformer) is designed to handle sequences of embeddings in an order-invariant manner (due to the self-attention mechanism), the output should remain consistent under the same group transformations applied to the input and the output:
+
+$$
+ M_G(x) = g( M_G(x))
+$$
+
+Therefore, the `PostHocLearnedAggregation` model is equivariant by design because the transformer aggregation maintains the equivariance property through its self-attention mechanism and the consistent application of transformations across the input space. The use of the class token ensures that the final output logits are derived in a manner that respects the input transformations.
+
 ## Introducing Equivariant Modern ViTs
 Explain this and make figure to display architecture.
 
