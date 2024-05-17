@@ -20,6 +20,7 @@ class LiftSelfAttention(torch.nn.Module):
         num_heads: int,
         max_pos_embedding: int,
         attention_dropout_rate: float,
+        return_attn_probs: bool = False,
     ):
         """
         Creates a lifting self-attention layer with global receptive fields.
