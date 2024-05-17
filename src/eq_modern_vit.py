@@ -3,14 +3,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as tvtf
 import torchvision.transforms.functional as TF
-
+import wandb
 import copy
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import math
 from datasets import MNIST_rot
 from train_vit import VisionTransformer
-
+import os
 import models
 import g_selfatt.groups as groups
 
@@ -170,73 +170,77 @@ class EquivariantViT(nn.Module):
 
         return x
 
-def train(model, n_epochs=5):
-    model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)
-    criterion = nn.CrossEntropyLoss()
-    best_val_acc = None #evaluate(model)
-    print(type(model).__name__)
-    print(f"Starting validaitons accuracy: {best_val_acc}")
-    best_model_state = None
 
-    for epoch in tqdm(range(n_epochs)):
-        epoch_losses = []
-        for images, targets in train_loader:
-            images = images.to(device)
-            targets = targets.to(device)
+def main():
+    os.environ["WANDB_API_KEY"] = "691777d26bb25439a75be52632da71d865d3a671"  # TODO change this if we are doing serious runs
+    wandb.init(
+        project="non-equivariant-vit",
+        entity="equivatt_team",
+    )
+
+    model = EquivariantViT()
+
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), 0.001)
+
+    best_model = copy.deepcopy(model.state_dict())
+    best_val_acc = 0
+
+    for epoch in range(500):
+        model.train()
+        losses = []
+        for inputs, labels in train_loader:
+            inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
             optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, targets)
+            out = model(inputs)
+            loss = criterion(out, labels)
+            optimizer.zero_grad()
             loss.backward()
-            print(loss)
-            optimizer.step()
-            epoch_losses.append(loss.item())
+            optimizer.step()  # Update weights
+            losses.append(loss.item())
+        wandb.log({"loss_train":sum(losses)/len(losses)}, step=epoch+1)
 
-        # validate and store best model state
-        val_acc = evaluate(model)
-        if val_acc > best_val_acc:
-            best_val_acc = val_acc
-            best_model_state = copy.deepcopy(model.state_dict())
+        # Validate on the validation set
+        if epoch % 10 == 0:
+            model.eval()  # Set the model to evaluation mode
+            correct = 0
+            total = 0
+            with torch.no_grad():  # Disable gradient calculation during inference
+                for inputs, labels in val_loader:
+                    inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
+                    outputs = model(inputs)
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += labels.size(0)
+                    correct += (predicted == labels).sum().item()
 
-        # log epoch loss
-        print(f"Epoch {epoch+1}: loss {sum(epoch_losses)/len(epoch_losses):.4f}, validation accuracy {val_acc}")
+            accuracy = 100 * correct / total
+            if accuracy > best_val_acc:
+                best_model = copy.deepcopy(model.state_dict())
+                best_val_acc = accuracy
+            
+            wandb.log({"validation_accuracy":accuracy}, step=epoch+1)
 
-    # Load best model state into the original model
-    if best_model_state is not None:
-        model.load_state_dict(best_model_state)
+    wandb.run.summary["best_validation_accuracy"] = best_val_acc
 
-    return model.to(device)
-
-def evaluate(model):
-    model.eval()
-    correct = total = 0
-    with torch.no_grad():  # disable gradient calculation during inference
-        for inputs, labels in tqdm(val_loader):
-            inputs, labels = inputs.to(device), labels.to(device)  # move inputs and labels to device
-            outputs = model(inputs)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-    val_acc = 100 * correct / total
-    return val_acc
-
-def test(model):
-    model.eval()
-    correct = total = 0
-    with torch.no_grad():  # disable gradient calculation during inference
-        for inputs, labels in tqdm(test_loader):
-            inputs, labels = inputs.to(device), labels.to(device)  # move inputs and labels to device
+    # Test on the test set
+    model.eval()  # Set the model to evaluation mode
+    correct = 0
+    total = 0
+    with torch.no_grad():  # Disable gradient calculation during inference
+        for inputs, labels in test_loader:
+            inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
             outputs = model(inputs)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
     test_acc = 100 * correct / total
-    return test_acc
+    
+    wandb.run.summary["test_acc"] = test_acc
 
-def main():
-    model = EquivariantViT()
-    model = train(model)
-    print(test(model))
+    # save model and log it
+    model.load_state_dict(best_model)
+    torch.save(model.state_dict(), "saved/modern_eq_vit.pt")
+    torch.save(model.state_dict(), os.path.join(wandb.run.dir, "modern_eq_vit.pt"))
 
 
 if __name__ == "__main__":
