@@ -50,12 +50,15 @@ class PostHocEquivariant(nn.Module):
         self.finetune_model = finetune_model
         self.device = next(model.parameters()).device
 
-    def forward(self, images):
+    def forward(self, images, vis=False):
         transforms = get_transforms(images, self.n_rotations, self.flips).to(self.device)
         B, T, C, H, W = transforms.shape
         transforms = transforms.view(B*T, C, H, W)  # process all transformations in one forward pass
         embeddings = self._forward(transforms, B, T)
-        logits = self.project_embeddings(embeddings)  # B, num_classes
+        if vis: 
+            out = self.project_embeddings(embeddings, vis=True)
+            return out
+        logits = self.project_embeddings(embeddings)  # B, num_classes            
         return logits
 
     def _forward(self, transforms, B, T):
@@ -185,7 +188,8 @@ class PostHocLearnedAggregation(PostHocEquivariant):
         super().__init__(model, n_rotations, flips, finetune_mlp_head, finetune_model)
         self.aggregation_model = aggregation_model
 
-    def project_embeddings(self, embeddings):
+    def project_embeddings(self, embeddings, vis=False):
+        if vis: return self.aggregation_model(embeddings, vis=True)
         combined_embeddings = self.aggregation_model(embeddings)
         logits = self.model.mlp_head(combined_embeddings)
         return logits
