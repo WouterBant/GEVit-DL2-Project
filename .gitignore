@@ -8,5 +8,6 @@ __pycache__
 .vscode
 .pytype
 data/*
+src/data/*
 !data/.gitkeep
 

@@ -4,6 +4,7 @@ import ml_collections
 import torch
 import torchvision
 from collections import Counter
+import numpy as np
 
 from datasets import MNIST_rot, PCam
 
@@ -72,13 +73,25 @@ def get_dataset(config: ml_collections.ConfigDict,
         ]
     )
 
-    if "mnist" in config.dataset.lower():
+    if "rotmnist" in config.dataset.lower():
         training_set = dataset(root=data_root, stage="train", download=True, transform=transform_train, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)
-        validation_set = dataset(root=data_root, stage="validation", download=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)  # Use test transform
+        # rot_validation_set = dataset(root=data_root, stage="validation", download=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)  # Use test transform
         test_set = dataset(root=data_root, stage="test", download=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)
+    elif "mnist" in config.dataset.lower():
+        training_set = get_MNIST(root=data_root, train=True, transform=transform_train, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)
+        test_set = get_MNIST(root=data_root, train=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)
     else:   
         training_set = dataset(root=data_root, train=True, download=True, transform=transform_train, data_fraction=data_fraction)
         test_set = dataset(root=data_root, train=False, download=True, transform=transform_test, data_fraction=data_fraction)
+
+    if "rotmnist" in config.evaluate.lower():
+        validation_set = MNIST_rot(root=data_root, stage="validation", download=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)  # Use test transform
+    elif "mnist" in config.evaluate.lower():
+        validation_set = get_MNIST(root=data_root, train=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)
+    elif "both" in config.evaluate.lower():
+        mnist_set = MNIST_rot(root=data_root, stage="validation", download=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)  # Use test transform
+        rotmnist_set = get_MNIST(root=data_root, train=True, transform=transform_test, data_fraction=data_fraction, only_3_and_8=config.only_3_and_8)
+        validation_set = torch.utils.data.ConcatDataset([mnist_set, rotmnist_set])
 
     training_loader = torch.utils.data.DataLoader(
         training_set,
@@ -129,6 +142,9 @@ def get_dataset(config: ml_collections.ConfigDict,
     test_labels = [label for _, label in test_loader.dataset]
     test_label_counts = Counter(test_labels)
 
+
+        
+
     print("\n"+"-"*30)
     print(f"Running experiment on {config.dataset.lower()} dataset")
     print(f"Number of train samples: {len(training_loader.dataset)}")
@@ -149,3 +165,32 @@ def get_dataset(config: ml_collections.ConfigDict,
     print("\n"+"-"*30)
 
     return dataloaders
+
+
+def get_MNIST(root, train, transform, data_fraction, only_3_and_8):
+        mnist_full = torchvision.datasets.MNIST(root=root, train=train, download=True, transform=transform)
+
+        num_samples = len(mnist_full)
+        if only_3_and_8:
+            # Filter indices for samples with labels 3 and 8
+            indices = []
+            for idx, (image, label) in enumerate(mnist_full):
+                if label == 3 or label == 8:
+                    indices.append(idx)
+                    
+                    if label == 3:
+                        mnist_full.targets[idx] = 0
+                    else:
+                        mnist_full.targets[idx] = 1
+
+            num_samples = len(indices)
+
+
+        # Randomly select a fraction of filtered indices
+        num_selected_samples = int(data_fraction * num_samples)
+        selected_indices = np.random.choice(indices, num_selected_samples, replace=False)
+
+        # Create the training set with a fraction of the data
+        training_set = torch.utils.data.Subset(mnist_full, selected_indices)
+
+        return training_set
