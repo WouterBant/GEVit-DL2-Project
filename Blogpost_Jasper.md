@@ -59,18 +59,37 @@ The decoder is very similar to the encoder however this encapsulates a third sub
 
 <strong> Attention: </strong>
 
+The attention mechanism allows the transformer to assign a certain weight to the individual input tokens. Using this attention results in improved embeddings. A toy example of this can be found in Figure 3. In this graph words with higher attention have a higher opacity when encoding the word it.
+
 <table align="center">
   <tr align="center">
-      <td><img src="figures/Multi-head attention.png" width=300></td>
+      <td><img src="figures/Attention example.png" width=300></td>
   </tr>
   <tr align="left">
-    <td colspan=2><b>Figure 3.</b> Schematic depiction of the attention mechanism (INSERT BRON)</td>
+    <td colspan=2><b>Figure 3.</b> An example of attention (INSERT BRON)</td>
+  </tr>
+</table>
+
+More formally, the attention mechanism can be seen as mapping a query and a set of key-value pairs to an output. The query, key and value are all vectors. The output is computed by taking the weighted sum of the values. The weight for each value is determined by a multiplication between the query and the key and taking softmax. This procedure is called Scaled Dot-Product attention. In the final architecture Multi-Head Attention however is used which consists of several attention layers which are computed in parallel. In practice the attention for a set of queries are calculated simultaneously. This is done by packing together all queries in a matrix Q, all keys in matrix K and all values in matrix V. In Figure 4, a schematic depiction of the attention mechanism is show.
+
+<table align="center">
+  <tr align="center">
+      <td><img src="figures/Multi-head attention.png" width=500></td>
+  </tr>
+  <tr align="left">
+    <td colspan=2><b>Figure 4.</b> Schematic depiction of the attention mechanism (INSERT BRON)</td>
   </tr>
 </table>
 
 <strong> Positional Encoding: </strong>
 
+During the encoding block, the order of the input is not taken into account. As being able to know the order of the words or input, positional encodings are used. These positional encodings allow the Transformer to understand the order of the input sequence. These positional encodings have the same dimension $d_{\text{model}}$ as the input embeddings, so that the two can be summed. In the original transformer network, the folowing positional encodings were used:
 
+$$\begin{align} 
+    PE_{(pos,2i)} &= sin(pos/10000^{2i/d_{\text{model}}}) \\
+    PE_{(pos,2i+1)} &= cos(pos/10000^{2i/d_{\text{model}}})
+\end{align}$$
+In the above equations, $pos$ is the position and $i$ is the dimension. The exact details about the transformer architecture can be found in ["Attention is All you Need"](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html)
 
 <strong> Vision Transformer: </strong>
 
@@ -79,7 +98,7 @@ The decoder is very similar to the encoder however this encapsulates a third sub
       <td><img src="figures/ViT architecture.png" width=600></td>
   </tr>
   <tr align="left">
-    <td colspan=2><b>Figure 4.</b> Schematic depiction of the ViT architecture (INSERT BRON)</td>
+    <td colspan=2><b>Figure 5.</b> Schematic depiction of the ViT architecture (INSERT BRON)</td>
   </tr>
 </table>
 
@@ -89,13 +108,12 @@ The decoder is very similar to the encoder however this encapsulates a third sub
 I (Jasper) propose to insert Colins part about how the positional encodings work here
 
 [comment]: <Here we should display how positional encoding makes the model equivariant.>
-
+---
 ## Discussion of (TODO cite paper) (Jasper, NOG NIET AF)
 Here we say that these methods are comp. expensive and some of our findings. eg steerable but also artifact like differences (show this with a figure). quickly mention we evaluate on validation set a increase batch size (and proportionally learning rate) because of computational constraints. Display the results we got for their methods here and say we use the reported numbers of the best method in the following parts of the blogpost. 
 
 
-
-#### Weaknesses and strengths of proposed method
+<strong> Weaknesses and strengths of proposed method </strong>
 
 The authors of the original equivaraint vision transformer mention that their proposed positional encodings for the (pixels or patches) results in an E(2) equivariant network. This has as an advantage that this results in consistent results and predictions even for rotated images. This is one very strong strength as such properties are very important in medical cell analysis where you do not want different predictions for the same cells by only rotating an image.
 
@@ -108,7 +126,7 @@ One of the main weaknesses that we seeked to explore with their proposed method 
 3. A third weakness that we discovered has to do with the implementation that the authors used to train and evaluate the performance of their models. When expecting their source code, we found that the authors used the test set during training for evaluating the performance of their method. In the end after training, the epoch with the best performance on the test set was reported as the result. This is not a good practice as this causes overfitting on the test set, while a test set should only be used to predict performance on the final model.
 4. The original paper states that their approach is steerable because the positional encoding lives in a continuous space. This however appears to be incorrect because rotations of 45 degrees will get different positional encodings than for 90 degrees. See results in the google docs. This is likely caused by the interpolation effect.
 
-#### Our novel contribution
+<strong> Our novel contribution </strong>
 
 Some of the contributions that we want to add to this paper are already briefly discussed in the section above as we want to improve upon all the weaknesses mentioned. Furthermore, we also propose a novel architecture which utilizes a combination of a group-equivariant CNN together with a transformer and see if this is able to outperform their baseline
 
@@ -120,7 +138,7 @@ Some of the contributions that we want to add to this paper are already briefly 
 
 
 
-
+---
 
 #### Individual contributions
 
