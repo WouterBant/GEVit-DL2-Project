@@ -1,12 +1,42 @@
+import sys
+sys.path.append('..')
 import torch
 from g_selfatt.utils import num_params
 from torchvision import transforms
-from datasets import MNIST_rot
+from datasets import MNIST_rot, PCam
 import torch.nn as nn
 import copy
-import os
-import wandb
+import random
+from torch.optim.lr_scheduler import StepLR
+import math
+from torch.optim.lr_scheduler import LambdaLR
+import argparse
 
+def linear_warmup_cosine_lr_scheduler(
+    optimizer,
+    warmup_time_ratio: float,
+    T_max: int,
+) -> torch.optim.lr_scheduler:
+    """
+    Creates a cosine learning rate scheduler with a linear warmup time determined by warmup_time_ratio.
+    The warm_up increases linearly the learning rate from zero up to the defined learning rate.
+
+    Args:
+        warmup_time_ratio: Ratio in normalized percentage, e.g., 10% = 0.1, of the total number of iterations (T_max)
+        T_max: Number of iterations
+    """
+    T_warmup = int(T_max * warmup_time_ratio)
+
+    def lr_lambda(epoch):
+        # linear warm up
+        if epoch < T_warmup:
+            return epoch / T_warmup
+        else:
+            progress_0_1 = (epoch - T_warmup) / (T_max - T_warmup)
+            cosine_decay = 0.5 * (1 + math.cos(math.pi * progress_0_1))
+            return cosine_decay
+
+    return LambdaLR(optimizer, lr_lambda=lr_lambda)
 
 # https://lightning.ai/docs/pytorch/stable/notebooks/course_UvA-DL/11-vision-transformer.html
 def img_to_patch(x, patch_size, flatten_channels=True):
@@ -123,72 +153,110 @@ class VisionTransformer(nn.Module):
         out = self.mlp_head(cls)
         return out
 
+class CustomRotation(object):
+    def __init__(self, angles):
+        self.angles = angles
 
+    def __call__(self, img):
+        angle = random.choice(self.angles)
+        return transforms.functional.rotate(img, angle)
 
-def main():
-    os.environ["WANDB_API_KEY"] = "691777d26bb25439a75be52632da71d865d3a671"  # TODO change this if we are doing serious runs
-    wandb.init(
-        project="non-equivariant-vit",
-        entity="equivatt_team",
-    )
+def main(args):
 
-    data_mean = (0.1307,)
-    data_stddev = (0.3081,)
-    transform_train = transforms.Compose([
-        transforms.RandomRotation(degrees=(-180, 180)),  # Random rotation
-        transforms.RandomHorizontalFlip(),  # Random horizontal flip with a probability of 0.5
-        transforms.RandomVerticalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(data_mean, data_stddev)
-    ])
+    if args.rotmnist:
+        data_mean = (0.1307,)
+        data_stddev = (0.3081,)
+        transform_train = transforms.Compose([
+            transforms.RandomRotation(degrees=(-180, 180)),  # Random rotation
+            transforms.ToTensor(),
+            transforms.Normalize(data_mean, data_stddev)
+        ])
+    else:
+        data_mean = (0.701, 0.538, 0.692)
+        data_stddev = (0.235, 0.277, 0.213)
+        transform_train = transforms.Compose([
+            CustomRotation([0, 90, 180, 270]),
+            transforms.RandomHorizontalFlip(),  # Random horizontal flip with a probability of 0.5
+            transforms.RandomVerticalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(data_mean, data_stddev)
+        ])
+    
     transform_test = transforms.Compose(
         [
             transforms.ToTensor(),
             transforms.Normalize(data_mean, data_stddev),
         ]
     )
-    train_set = MNIST_rot(root="../data", stage="train", download=True, transform=transform_train, data_fraction=1, only_3_and_8=False)
-    validation_set = MNIST_rot(root="../data", stage="validation", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
-    test_set = MNIST_rot(root="../data", stage="test", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
+
+    if args.rotmnist:
+        train_set = MNIST_rot(root="../data", stage="train", download=True, transform=transform_train, data_fraction=0.1, only_3_and_8=False)
+        validation_set = MNIST_rot(root="../data", stage="validation", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
+        test_set = MNIST_rot(root="../data", stage="test", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
+    else:
+        train_set = PCam(root="../data", train=True, download=True, transform=transform_train)
+        validation_set = PCam(root="../data", train=False, valid=True, download=True, transform=transform_test)
+        test_set = PCam(root="../data", train=False, download=True, transform=transform_test)
 
     train_loader = torch.utils.data.DataLoader(
         train_set,
-        batch_size=128,
+        batch_size=1024,
         shuffle=True,
         num_workers=4,
     )
     val_loader = torch.utils.data.DataLoader(
         validation_set,
-        batch_size=128,
-        shuffle=True,
+        batch_size=1024,
+        shuffle=False,
         num_workers=4,
     )
     test_loader = torch.utils.data.DataLoader(
         test_set,
-        batch_size=128,
+        batch_size=1024,
         shuffle=False,
         num_workers=4,
     )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = VisionTransformer(embed_dim=64,
+    if args.rotmnist:
+        model = VisionTransformer(embed_dim=64,
+                                hidden_dim=512,
+                                num_heads=4,
+                                num_layers=6,
+                                patch_size=4,
+                                num_channels=1,
+                                num_patches=49,
+                                num_classes=10,
+                                dropout=0.1).to(device)
+    else:
+        model = VisionTransformer(embed_dim=64,
                             hidden_dim=512,
                             num_heads=4,
                             num_layers=6,
-                            patch_size=4,
-                            num_channels=1,
-                            num_patches=49,
-                            num_classes=10,
+                            patch_size=6,
+                            num_channels=3,
+                            num_patches=256,
+                            num_classes=2,
                             dropout=0.1).to(device)
                             
     print(f"Number of parameters in the model: {num_params(model)}")
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), 0.001)
+
+    if args.rotmnist:
+        optimizer = torch.optim.Adam(model.parameters(), 0.001)
+    else:
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0001)
+        max_steps = 50
+        max_steps *= len(train_loader.dataset) // 1024
+        lr_scheduler = linear_warmup_cosine_lr_scheduler(
+                optimizer, 10.0 / 50, T_max=50  # Perform linear warmup for 10 epochs.
+            )
 
     best_model = copy.deepcopy(model.state_dict())
     best_val_acc = 0
 
-    for epoch in range(500):
+    n_epochs = 500 if args.rotmnist else 50  # pcam large
+    for epoch in range(n_epochs):
         model.train()
         losses = []
         for inputs, labels in train_loader:
@@ -200,29 +268,24 @@ def main():
             loss.backward()
             optimizer.step()  # Update weights
             losses.append(loss.item())
-        wandb.log({"loss_train":sum(losses)/len(losses)}, step=epoch+1)
+            if not args.rotmnist: lr_scheduler.step()
 
         # Validate on the validation set
-        if epoch % 10 == 0:
-            model.eval()  # Set the model to evaluation mode
-            correct = 0
-            total = 0
-            with torch.no_grad():  # Disable gradient calculation during inference
-                for inputs, labels in val_loader:
-                    inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
-                    outputs = model(inputs)
-                    _, predicted = torch.max(outputs.data, 1)
-                    total += labels.size(0)
-                    correct += (predicted == labels).sum().item()
+        model.eval()  # Set the model to evaluation mode
+        correct = 0
+        total = 0
+        with torch.no_grad():  # Disable gradient calculation during inference
+            for inputs, labels in val_loader:
+                inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
+                outputs = model(inputs)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
 
-            accuracy = 100 * correct / total
-            if accuracy > best_val_acc:
-                best_model = copy.deepcopy(model.state_dict())
-                best_val_acc = accuracy
-            
-            wandb.log({"validation_accuracy":accuracy}, step=epoch+1)
-
-    wandb.run.summary["best_validation_accuracy"] = best_val_acc
+        accuracy = 100 * correct / total
+        if accuracy > best_val_acc:
+            best_model = copy.deepcopy(model.state_dict())
+            best_val_acc = accuracy
 
     model.load_state_dict(best_model)
     
@@ -239,12 +302,23 @@ def main():
             correct += (predicted == labels).sum().item()
     test_acc = 100 * correct / total
     
-    wandb.run.summary["test_acc"] = test_acc
+    print(test_acc)
 
     # save model and log it
-    torch.save(model.state_dict(), "saved/model.pt")
-    torch.save(model.state_dict(), os.path.join(wandb.run.dir, "model.pt"))
+    if args.rotmnist:
+        torch.save(model.state_dict(), "saved/model_rotmnist.pt")
+    else:
+        torch.save(model.state_dict(), "saved/model_pcam.pt")
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Argument Parser for Model Configuration")
+
+    parser.add_argument("--rotmnist", action="store_true", help="Training for rotmnist")
+    parser.add_argument("--only_3_and_8", action="store_true", help="Only use classes 3 and 8")
+
+    args = parser.parse_args()
+    return args
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    main(args)

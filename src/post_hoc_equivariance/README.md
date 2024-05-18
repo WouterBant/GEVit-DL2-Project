@@ -1,10 +1,27 @@
 How to reproduce our results
 
+Download patch Camelyon here:
+https://drive.google.com/file/d/1THSEUCO3zg74NKf_eb3ysKiiq2182iMH/view?usp=sharing
+
 First of all, all our results are stored in the folder results
+
+To train one of the models simply call:
+```bash
+python train_vit.py [--rotmnist]
+```
+
+--rotmnist: if you want to train on the rotation MNIST dataset else you train on patch Camelyon
 
 For all experiments we experiment with, no finetuning, only fintuning the last layer, and finetuning the entire model.
 
-All these experiments can be reproduced with:
+To run the experiments for the pretrained resnet, simply run (note that you need to install the patch Camelyon dataset yourself):
+```bash
+resnet.py [--finetune]
+```
+
+--finetune: will finetune the last layer (experiments showed that finetuning the entire model is not beneficial)
+
+All other experiments can be reproduced with:
 ```bash
 python post_hoc_experiments.py --model_path path_to_model [--n_rotations] [--flips] [--finetune_model] [--finetune_mlp_head] [--pcam]
 ```
