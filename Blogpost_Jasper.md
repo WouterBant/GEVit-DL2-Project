@@ -14,7 +14,7 @@ In particular, in this blogpost, we present:
 3. Visualize different layers of equivariant and non equivariant, with the aim to help researchers better understand these models. 
 ---
 
-## The Importance of Equivariant Models (Jasper)
+## The Importance of Equivariant Models
 In this section we motivate why one should be interested in equivariant models and discuss prior work. Equivariance is a fundamental property in various domains including image processing [Krizhevsky and Ilya 2012](https://proceedings.neurips.cc/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html), 3D point cloud analysis [Li, Chen and Lee 2018](https://openaccess.thecvf.com/content_cvpr_2018/html/Li_SO-Net_Self-Organizing_Network_CVPR_2018_paper.html), chemistry [Faber et al.](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.117.135502), astronomy [Ntampaka 2016](https://iopscience.iop.org/article/10.3847/0004-637X/831/2/135/meta), and economics [Qin et al. 2022](https://proceedings.neurips.cc/paper_files/paper/2022/hash/730d61b4d9ff794a028fa3a25b9b891d-Abstract-Conference.html). Equivariance in machine learning refers to the property of a function where applying a transformation to the input results in a corresponding transformation to the output. In simpler terms, if you shift, rotate, or scale the input, the output will shift, rotate, or scale in the same way, making the model's predictions consistent and reliable.
 
 
@@ -23,18 +23,65 @@ In the realm of Natural Language Processing (NLP), [Vaswani et al. 2017](https:/
 
 Iniitial attempts have been made to modify the self-attention to become equivariant. Before the release of the GE-ViT model, The most promising work in the field was proposed by [Romero et al. 2020](https://proceedings.mlr.press/v119/romero20a.html). They proposed Group Equivariant Stand Alone Self-Attention Networks (GSA-nets), which incorporated a different positional encoding strategy and modifications to the attention mechanism to ensure equivariance.
 
-!["Motivation equivariant ViT"](figures/rotation.gif)
+<table align="center">
+  <tr align="center">
+      <td><img src="figures/rotation.gif" width=600></td>
+  </tr>
+  <tr align="left">
+    <td colspan=2><b>Figure 1.</b> The effect of rotation on the predicted digit for the GE-ViT and the standard ViT</td>
+  </tr>
+</table>
 
-In the showcased GIF, the significance of equivariance becomes evident. Consistent outcomes in the above digit prediction is desirable, highlighting the importance of a model that maintains its predictions irrespective of image rotation. This attribute holds particular significance in fields such as cell analysis, where a model's ability to deliver consistent predictions regardless of image orientation is crucial.
+In Figure 1, the significance of equivariance becomes evident. Consistent outcomes in the above digit prediction is desirable, highlighting the importance of a model that maintains its predictions irrespective of image rotation. This attribute holds particular significance in fields such as cell analysis, where a model's ability to deliver consistent predictions regardless of image orientation is crucial.
 
 --- 
 
-## Recap on Vision Tranformers (ViTs) (Jasper)
+## Recap on Vision Tranformers (ViTs)
 
 [comment]: <In this section we discuss modern ViTs and older equivariant versions.>
 
+In recent years, The Transformer architecture ["Attention is all you need"](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html) has had a huge impact in natural language processing (NLP). The succes of this architecture has paved the way for an adaptation in computer vision, giving rise to Vision Transformers (ViTs).
+
+The transformer architecture works by having an encoder-decoder structure. The encoder maps an input sequence $(x_1, ..., x_n)$ to a continous latent variable denoted as $z=(z_1, ...,z_n)$. Using this latent variable $z$, the decoder generates an output sequence $y=(y_1, ..., y_m)$ one element at a time. During each generating time step, the model utilises its previously generated output. Within this encoder and decoder structure, the architectures uses self-attention and fully connected layers. The attention mechanism will be explained in the next paragraph. The full architecture is depicted in Figure 2.
+
+<table align="center">
+  <tr align="center">
+      <td><img src="figures/Transformer architecture.png" width=300></td>
+  </tr>
+  <tr align="left">
+    <td colspan=2><b>Figure 2.</b> The Transformer architecture with the encoder (left) and decoder (right) (INSERT BRON)</td>
+  </tr>
+</table>
+
+The encoder works by having a stack of $N$ blocks layers on top of each other. Each layer contains two sub-layers. The first sub-layer is a multi-head self-attention mechanism and the second sub-layer a fully connected feed-forward network. Between each sublayer, residual connections are used.
+
+The decoder is very similar to the encoder however this encapsulates a third sub-layer. This third sub-layer is responsible for the Multi-Head attention on the output generated so far in the process.
+
+<strong> Attention: </strong>
+
+<table align="center">
+  <tr align="center">
+      <td><img src="figures/Multi-head attention.png" width=300></td>
+  </tr>
+  <tr align="left">
+    <td colspan=2><b>Figure 3.</b> Schematic depiction of the attention mechanism (INSERT BRON)</td>
+  </tr>
+</table>
+
+<strong> Positional Encoding: </strong>
 
 
+
+<strong> Vision Transformer: </strong>
+
+<table align="center">
+  <tr align="center">
+      <td><img src="figures/ViT architecture.png" width=600></td>
+  </tr>
+  <tr align="left">
+    <td colspan=2><b>Figure 4.</b> Schematic depiction of the ViT architecture (INSERT BRON)</td>
+  </tr>
+</table>
 
 ---
 ## Using positional encodings to make the model equivariant (Colin)
@@ -43,7 +90,7 @@ I (Jasper) propose to insert Colins part about how the positional encodings work
 
 [comment]: <Here we should display how positional encoding makes the model equivariant.>
 
-## Discussion of (TODO cite paper) (Jasper????)
+## Discussion of (TODO cite paper) (Jasper, NOG NIET AF)
 Here we say that these methods are comp. expensive and some of our findings. eg steerable but also artifact like differences (show this with a figure). quickly mention we evaluate on validation set a increase batch size (and proportionally learning rate) because of computational constraints. Display the results we got for their methods here and say we use the reported numbers of the best method in the following parts of the blogpost. 
 
 
