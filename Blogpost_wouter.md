@@ -28,14 +28,14 @@ Here we say that these methods are comp. expensive and some of our findings. eg 
 
 ## Post Hoc Equivariant Models
 ### Introduction
-Although there are many advantages of equivariant models, they are often memory expensive and require many epochs for convergence. Because of this, their widespread adoption is hindered. To overcome this problem, we built in this section on the work of (TODO cite basu) to make any model equivariant with little to no finetuning.
+Equivariant models offer many advantages, but they are often memory-intensive and require numerous epochs to converge. This has hindered their widespread adoption. To address this issue, we have built upon the work of Basu (TODO citation needed) to make any image classification model equivariant with minimal ot no fine-tuning.
 
-(TODO cite basu) achieved this by invariantly aggregating the latent dimension of transformed inputs. In his work he proposed (among other ways) to use mean pooling and using a neural network to give importance scores for a weighted average of embeddings. The pipeline for this method is visualized in the image below:
+Basu (TODO citation needed) achieved this by invariantly aggregating the latent dimensions of transformed inputs. In his work, he proposed several methods, including mean pooling and using a neural network to assign importance scores for a weighted average of embeddings. The pipeline for this method is visualized in the image below:
 
 ![figure](figures/posthocaggregation.png)
-> This image displays how post hoc equivariance works. The input image is transformed in all ways one ones to be equivariant (in this case 90 degree rotations). Each image is passed through the same model which either provides latent embedding or class probabilities. Afterwards these embeddings (or probabilities) are aggregated in an invariant way.
+This image illustrates how post hoc equivariance works. The input image undergoes various transformations to achieve equivariance (in this case, 90-degree rotations). Each transformed image is processed by the same model, which generates latent embeddings or class probabilities. These embeddings (or probabilities) are then aggregated in an invariant manner.
 
-Besides these ways of aggregating the embeddings we propose and evaluate the following ways of aggregating the latent dimensions: sum, max pooling, multi-head attention without positional encodings. Furthermore we experiment with predicting the class with the highest probability among all transformation and predicting the class with the highest product of probabilities. In the next section we will more formally discuss these methods.
+In addition to the aggregation methods suggested by Basu, we propose and evaluate the following approaches for aggregating latent dimensions: sum pooling, max pooling, and multi-head attention without positional encodings. Furthermore, we experiment with predicting the class with the highest probability among all transformations and predicting the class with the highest product of probabilities. In the next section, we will discuss these methods in more detail.
 
 ### Method
 Similar to the idea of Basu et al. (2023), which they proposed a finetuning method called equituning that starts with potentially non-equivariant model M and produces a model $M_G$ that is equivariant to a group G. 
@@ -99,19 +99,19 @@ $$
 Therefore, the `PostHocLearnedAggregation` model is equivariant by design because the transformer aggregation maintains the equivariance property through its self-attention mechanism and the consistent application of transformations across the input space. The use of the class token ensures that the final output logits are derived in a manner that respects the input transformations.
 
 ### Results
-We evaluated all approaches for different experiments where for each we investigate the zero-shot impact, the impact when we only finetune the last layer, and the impact of finetuning the whole model.
+We evaluated all approaches through various experiments, examining their zero-shot impact, the effect of fine-tuning only the last layer, and the impact of fine-tuning the entire model.
 
-We conduct the following experiments:
+We conducted the following experiments:
 1. Training and evaluating on rotation MNIST.
-2. Training on normal MNIST and evaluating on rotation MNIST.
+2. Training on standard MNIST and evaluating on rotation MNIST.
 3. Training on 10% of rotation MNIST and evaluating on rotation MNIST.
 4. Evaluating a pretrained RESNET-50 on Patch Camelyon.
 
-> NOTE: all details needed for reproducing our results are stated in the section [Experimental Details](#experimental-details)
-
+> **NOTE:** All details needed for reproducing our results are provided in the section [Experimental Details](#experimental-details).
 
 #### 1. Training and evaluating on rotation MNIST
-In the first experiment we train and evaluate on rotation as is done in (TODO cite papers). Below you can find the reported test accuracies of the best models that were obtained with a patch size of 5 and 12 rotations.
+In the first experiment, we trained and evaluated on rotation MNIST as done in [GeViT] and [GSA-Nets] (citations needed). Below are the reported test accuracies of the best models, obtained with a patch size of 5 and 12 rotations.
+
 <table>
 <thead>
 <tr>
@@ -132,7 +132,8 @@ In the first experiment we train and evaluate on rotation as is done in (TODO ci
 </tbody>
 </table>
 
-Below we present the results for the different aggregation methods without finetuning, with finetuningthe last layer, and with finetuning the whole model. The first row (ViT) is the Vision Transformer we trained on rotation MNIST and we apply the framework on this model.
+Below we present the results for the different aggregation methods without fine-tuning, with fine-tuning the last layer, and with fine-tuning the entire model. The first row (ViT) represents the Vision Transformer we trained on rotation MNIST, and we applied our framework to this model.
+
 <table>
     <thead>
         <tr>
@@ -227,14 +228,15 @@ Below we present the results for the different aggregation methods without finet
     </tbody>
 </table>
 
-The table above present interesting results on many accounts. First, it shows that, except for the methods that require learning, all methods improve the results from the base model. This is surprising as for example summing or taking the maximum element of the latent embeddings will likely significantly change the embeddings the final layers has seen during training, anyway, it finds a way to accurately project this embedding to logits. Second, as expected, the dominant trend shows that finetuning the last layer leads to better results and further improvements can be seen for finetuning the whole model. Third, it can be seen that multiple models outperform the best reported baselines, already after only finetuning the final layer. All models that aggregate without additional parameters outperform the baselines when we finetune the entire model.
+The table above presents interesting results on many accounts. First, it shows that, except for the methods that require learning, all methods improve the results from the base model. This is surprising because, for example, summing or taking the maximum element of the latent embeddings would likely significantly alter the embeddings the final layers saw during training. Nevertheless, the model finds a way to accurately project these modified embeddings to logits. 
 
-We found that in this experiment learning to score the embeddings or learning to aggregate the embeddings with multi headed attention led to overfitting, leading to worse validation and test accuracies.
+Second, as expected, the dominant trend shows that fine-tuning the last layer leads to better results, with further improvements observed when fine-tuning the entire model. Third, it can be seen that multiple models outperform the best-reported baselines, even after only fine-tuning the final layer. All models that aggregate without additional parameters outperform the baselines when we fine-tune the entire model. This means that better results can be achieved without the use of inherently equivariant models, however, post-hoc augmentations are essential in this experiment.
 
-
+We found that in this experiment, learning to score the embeddings or learning to aggregate the embeddings with multi-head attention led to overfitting, resulting in worse validation and test accuracies.
  
 #### 2. Training on normal MNIST and evaluating on rotation MNIST
-One of the advantages of pure equivariant models is that the training data can be in different orientations than the test data, as long as the transformation between training and testing examples are in the group the model is equivariant to. This is typically not the case for non equivariant models. Therefor we now test how well post hoc methods can improve the non equivariant model.
+One of the advantages of purely equivariant models is that the training data can be in different orientations than the test data, as long as the transformations between the training and testing examples are within the group the model is equivariant to. This is typically not the case for non-equivariant models. Therefore, we now test how well post-hoc methods can improve the performance of non-equivariant models.
+
 <table>
     <thead>
         <tr>
@@ -331,12 +333,16 @@ One of the advantages of pure equivariant models is that the training data can b
     </tbody>
 </table>
 
-The non equivariant model trained on MNIST, attained an accuracy around 29% on rotation MNIST. This model can accurately predict the digits that are in their normal orientation, but has a hard time predicting heavily rotated images. The best approach approach that doesn't require any learning is taking the transformation that gives the highest probability to one particular class, achieving a test accuracy of 49%. This can be explained by the model being uncertain to transformations of digits that were unseen during training but assigning high probability to digits close to their original orientation. However, the digit 6 rotated by 180 degrees is likely to be predicted a 9, hence this method is not watertight. 
+TODO need a figure for this
 
-Interestingly, the models that require learning perform much better in this experiment. Aggregating the embeddings with multi headed attention even leads to an accuracy of about 92% with keeping all parameters of the original model fixed. However, when finetuning the whole model, taking the mean or sum of the embeddings is again more effective.
+The non-equivariant model trained on MNIST attained an accuracy of around 29% on rotation MNIST. This model can accurately predict the digits in their normal orientation but struggles with heavily rotated images. The best approach that doesn't require any learning is selecting the transformation that gives the highest probability to one particular class, achieving a test accuracy of 49%. This can be explained by the model being uncertain about transformations of digits that were unseen during training but assigning high probability to digits close to their original orientation. However, a digit 6 rotated by 180 degrees is likely to be predicted as a 9, indicating that this method is not foolproof.
+
+Interestingly, the models that require learning perform much better in this experiment. Aggregating the embeddings with multi-head attention even leads to an accuracy of about 92% while keeping all parameters of the original model fixed. However, similar to the previous results, when fine-tuning the entire model, taking the mean or sum of the embeddings proves to be more effective.
 
 #### 3. Training on 10% of rotation MNIST and evaluating on rotation MNIST.
-One key advantage of equivariant models is their data efficiency, owing to the way inductive biases are incorporated (citation needed). Therefore, we now compare the performance of post hoc methods against the equivariant models used in (paper citation needed) when training on only 10% of the rotated MNIST dataset.
+One key advantage of equivariant models is their data efficiency, owing to the way inductive biases are incorporated (TODO citation needed). Therefore, we now compare the performance of post hoc methods against the equivariant models used in (TODO paper citation needed) when training on only 10% of the rotated MNIST dataset.
+
+We also evaluated the performance of GE-ViT when trained on a reduced dataset comprising only 10% of the total data. Interestingly, we observed that this model reached convergence after 600 epochs, achieving a test accuracy of only 83.55%. However, this accuracy was notably lower compared to when the model was trained on the complete training set.
 
 <table>
     <thead>
@@ -433,10 +439,10 @@ One key advantage of equivariant models is their data efficiency, owing to the w
     </tbody>
 </table>
 
-Consistent with our results on the full rotation MNIST dataset, we observe that learning to aggregate the embeddings leads to overfitting and that all other methods improve performance and finetuning improves performance even more. Also in this experiment, mean pooling and summing of the latent dimensions turn out to perform really well.
+In line with our findings on the full rotation MNIST dataset, we find that learning to aggregate the embeddings often resulted in overfitting. Also, the other methods consistently enhanced performance, with fine-tuning showing even greater improvements and mean pooling and summing of latent dimensions lead to the highest accuracies. Remarkably, our non-equivariant ViT already surpassed the GE-ViT in performance. Throughout our experiments, we observed that GE-ViT exhibited high sensitivity to minor changes in hyperparameters. We hypothesize that optimizing hyperparameters could potentially yield higher accuracy. However, due to computational constraints, we didn't explore this further.
 
 #### 4. Evaluating a pretrained RESNET-50 on Patch Camelyon
-So far we have only considered models our own models trained on either MNIST or rotation MNIST. However, the post hoc methods could be applied to any pretrained models trained on any dataset. To evaluate the robustness of our results we use a [trained RESNET-50](https://huggingface.co/1aurent/resnet50.tiatoolbox-pcam). We thank TIAToolbox for releasing many pretrained models, we found it difficult to find well performing models elsewhere for this dataset.
+Until now, our analysis has been limited to our own models trained exclusively on either MNIST or rotation MNIST. However, it's worth noting that the post hoc methods discussed can be applied to pretrained models trained on various datasets. To validate the robustness of our findings, we use a [trained RESNET-50 model](https://huggingface.co/1aurent/resnet50.tiatoolbox-pcam). We are grateful to TIAToolbox for offering a wide range of pretrained models for this dataset, we found it challenging to find well performing models elsewhere.
 
 <table>
 <thead>
@@ -518,25 +524,41 @@ So far we have only considered models our own models trained on either MNIST or 
 </tr>
     </tbody>
 </table>
+We assessed the pretrained model's performance on PCam's validation and test sets, revealing accuracies of 87.8% and 86.6% respectively. Remarkably, employing mean pooling boosted these accuracies to 90.4% and 87.5% through just 1 epoch of fine-tuning. Additionally, both summing and the most probable method yielded favorable results in this experiment, underscoring the efficacy of incorporating inductive biases into pretrained models to enhance performance.
 
-We evaluated the pretrained model on the validation and test of PCam and found that it obtained accuracies of 87.8% and 86.6% respectively. Again we observe that mean poolingbest increasing these values up to 90.4% and 87.5% with finetuning for only 1 epoch. Also summing and the most probably method worked well for this experiment. This shows that incorporating inductive biases into pretrained models can improve performance.
+A notable observation is the considerable gap between validation and test accuracies. Given our single-epoch fine-tuning approach on the training set, it's strange why the validation accuracy would differ significantly from the test accuracy. Similar trends were noticed in other PCam experiments, where models exhibited rapid validation accuracy growth but more subdued improvements on the test set. We encourage further study on this dataset as it is a widely used benchmark.
 
-It is noticeable that there is a large discrepancy between the validation and test accuracies. We only finetune for one epoch on the training set, so there is no logical reason why the validation accuracy would increase much more that the test accuracy. We also found in other experiments that on PCam models tend to increase fast in the validation accuracy but in a much lesser way on the test set. We encourage further study on this dataset as it is a widely used benchmark.
-
-Also, we show here that large models can easily outperform the GSA-nets and GE-ViTs. However, we are comparing models with 45,000 parameters to a model with 23.6 million parameters. We tried scaling up GE-ViTs to over a million parameters, however, this exceeded our 40GB RAM GPU with batch size 1. This shows that these models do not scale well, nevertheless, we still think that it is worth exploring how well these models perform when they are scaled up, as we also show that incorporating inductive biases into models can significantly increase performance.
+Furthermore, our findings demonstrate the superiority of large models over GSA-nets and GE-ViTs. However, it's crucial to acknowledge the parameter discrepancy, comparing models with 45,000 parameters to one of 23.6 million. Attempting to scale up GE-ViTs to over a million parameters was not feasible for us, exceeding the limitations of our 40GB RAM GPU with a batch size of 1. While this indicates poor scalability, it's worth exploring how these models perform when scaled up, given our evidence that integrating inductive biases significantly enhances performance.
 
 ## Introducing Equivariant Modern ViTs
 Explain this and make figure to display architecture.
 
 ## Concluding Remarks
-In this blogpost, we evaluated exisiting and proposed new methods to make pretrained models equivariant with little to no finetuning. We find that mean pooling of the latent dimensions is the most robust method that performs well across all experiments. As expected, the performance increased further with finetuning the last layer and even more with finetuning the whole model. We show that this simple approach outperforms equivariant attention models and doesn't change the original training of these models.
+TODO make table with inference and training speeds of all models together with # of parameters
 
-It should be noted that this approach makes the model only equivariant to global transformations. Also, since the pretrained models were not translation equivariant the final models are also not translation equivariant. In other words these models are only equivaraiant to the O(2) and/or SO(2) groups. However, if one would apply these methods on CNNs, that are translation equivariant by nature, you would obtain equivariance to the E(2) and/or SE(2) groups. We encourage researchers investigating the effectiveness of these methods when applied to CNNs and in general to different datasets.
+In this blog post, we conducted a thorough evaluation of existing methods while also proposing new approaches to achieve equivariance in pretrained models with minimal to no fine-tuning. Our findings highlight mean pooling of latent dimensions as the most reliable method, consistently delivering strong performance across all experiments. Notably, performance saw incremental gains with fine-tuning the last layer and further enhancements when fine-tuning the entire model. Importantly, this simple yet effective approach outperforms equivariant attention models without altering their original training paradigms.
 
-We strongly believe that true equivariant models will be able to achieve higher performance (with less data) than non equivariant models, when enough compute is used. However, we think that when only limited compute is available for training the post hoc methods we show here can be a solution as they can be applied directly on pretrained models and robustly improve performance by significant amounts.
+It's crucial to recognize that this approach only confers equivariance to global transformations. Additionally, since the pretrained models lacked translation equivariance, the final models remain non-translation equivariant, solely equivariant to the O(2) and/or SO(2) groups. However, applying these methods to CNNs, inherently translation equivariant, would yield equivariance to the E(2) and/or SE(2) groups. We advocate for researchers to explore these methods' efficacy when applied to CNNs and across diverse datasets.
 
-Discuss main conclusions and limitations
+We firmly believe that true equivariant models possess the potential to achieve superior performance, requiring less data, particularly with ample computational resources. However, in scenarios where computational resources are limited for training, the post hoc methods presented here offer a viable solution. They can be directly applied to pretrained models, robustly enhancing performance by significant margins.
 
+Post Hoc Equivariant models, compared to inherently equivariant models:
+
+| Pros                         | Cons                           |
+|-------------------------------|---------------------------------|
+|              Directly applicable to trained image classification models                |                  Only global invariant               |
+|               Simple                |              Not straightforward to apply to different tasks                   |
+|              Proven to be effective                 |              Susceptible to interpolation effects as descrete transformations are used                   |
+|              Provides geometric guarantees                 |              Slows down model during inference                   |
+|              Scalability is determined by the base model                  |              Base model wastes parameters to learn equivariant properties                    |
+
+To address these cons, future work could explore the following ideas:
+- *Only global invariant*: apply the transformations to patches of the image as opposed to the whole image.
+- *Not straightforward to apply to different tasks*: for graph neural networks one could consider combining the outputs from equivalent slightly different permutations. With only slightly changing the input one can reuse the majority of computations from other permutations.
+- *Susceptible to interpolation effects as discrete transformations are used*: for rotations one could pad the image with black pixels to make the image a circle. Now don't make square patches but rings and split these up into multiple parts to preserve locality. During training mask out the black pixels.
+- *Slows down model during inference*: although all transformations are processed simultaneously, one could explore the possiblity of predicting the useful transformations with a small neural network to save computations spend on uninformative/misleading transformations.
+
+*Base model wastes parameters to learn equivariant properties*: the only ways to solve this are either by using an equivariant network, or transforming all inputs in a similar way. The former gives most guarantees, but is parameters a more important metric than training/inference time?
 ## References
 
 ## Experimental Details
