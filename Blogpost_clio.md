@@ -9,13 +9,13 @@
 In this blogpost, we aim to propose and evaluate alternative methods for the equivariant attention models discussed in (TODO cite). 
 
 In particular, in this blogpost, we present:
-1. Evaluate existing and novel methods to make non equivariant (attention) models, equivariant by combining the predictions of different transformations, that reflect inductive biases, of the input.
-2. Evaluate a novel method to make modern ViTs (TODO cite google) equivariant by combining equivariant CNNs (TODO cite) to project patches to latent embeddings that will be uses as input to the equivariant vision transformer model used by (TODO cite paper).
-3. Visualize different layers of equivariant and non equivariant, with the aim to help researchers better understand these models. 
+1. Evaluate existing and novel methods to make non equivariant (attention) models [Lippe 2023](https://lightning.ai/docs/pytorch/stable/notebooks/course_UvA-DL/11-vision-transformer.html), [Dosovitskiy et al. 2021](https://arxiv.org/pdf/2010.11929), equivariant by combining the predictions of different transformations, that reflect inductive biases, of the input.
+2. Evaluate a novel method to make modern ViTs equivariant by combining equivariant CNNs [Knigge 2023](https://github.com/phlippe/uvadlc_notebooks/blob/master/docs/tutorial_notebooks/DL2/Geometric_deep_learning/tutorial1_regular_group_convolutions_answered.ipynb) to project patches to latent embeddings that will be used as input to the equivariant vision transformer model used by [Xu et al.2023](https://arxiv.org/abs/2306.06722).
+3. Visualize different layers of equivariant and non equivariant, to help researchers better understand these models. 
 ---
 
 ## The Importance of Equivariant Models
-In this section we motivate why one should be interested in equivariant models and discuss prior work.
+In this section, we motivate why one should be interested in equivariant models and discuss prior work.
 
 Here we should display the difference in outputs for an equivariant and non equivariant model. TODO make a slider that rotates an input image for rotation mnist and that displays the output for both.
 
@@ -29,17 +29,17 @@ Here we say that these methods are comp. expensive and some of our findings. eg 
 
 ## Post Hoc Equivariant Models
 ### Introduction
-Although there are many advantages of equivariant models, they are often memory expensive and require many epochs for convergence. Because of this, their widespread adoption is hindered. To overcome this problem, we built in this section on the work of (TODO cite basu) to make any model equivariant with little to no finetuning.
+Although there are many advantages of equivariant models, they are often memory-expensive and require many epochs for convergence. Because of this, their widespread adoption is hindered. To overcome this problem, we built this section on the work of [Basu et al. 2023](https://arxiv.org/abs/2210.06475) to make any model equivariant with little to no finetuning.
 
-(TODO cite basu) achieved this by invariantly aggregating the latent dimension of transformed inputs. In his work he proposed (among other ways) to use mean pooling and using a neural network to give importance scores for a weighted average of embeddings. The pipeline for this method is visualized in the image below:
+[Basu et al. 2023](https://arxiv.org/abs/2210.06475) achieved this by invariantly aggregating the latent dimension of transformed inputs. In his work, he proposed (among other ways) to use of mean pooling and a neural network to give importance scores for a weighted average of embeddings. The pipeline for this method is visualized in the image below:
 
 ![figure](figures/posthocaggregation.png)
-> This image displays how post hoc equivariance works. The input image is transformed in all ways one ones to be equivariant (in this case 90 degree rotations). Each image is passed through the same model which either provides latent embedding or class probabilities. Afterwards, these embeddings (or probabilities) are aggregated in an invariant way.
+> This image displays how post hoc equivariance works. The input image is transformed in all ways one ones to be equivariant (in this case 90-degree rotations). Each image is passed through the same model which either provides latent embedding or class probabilities. Afterward, these embeddings (or probabilities) are aggregated in an invariant way.
 
 Besides these ways of aggregating the embeddings we propose and evaluate the following ways of aggregating the latent dimensions: sum, max pooling, and multi-head attention without positional encodings. Furthermore, we experiment with predicting the class with the highest probability among all transformations and predicting the class with the highest product of probabilities. In the next section, we will more formally discuss these methods.
 
 ### Method
-Similar to the idea of Basu et al. (2023), they proposed a finetuning method called equituning that starts with potentially non-equivariant model M and produces a model $M_G$ equivariant to a group G. 
+Similar to the idea of [Basu et al. 2023](https://arxiv.org/abs/2210.06475), they proposed a finetuning method called equituning that starts with potentially non-equivariant model M and produces a model $M_G$ equivariant to a group G. 
 
 Given a set $\chi$, group action of G on X is defined as $\Gamma X$: $G \times \chi$ -> $\chi$. We write $\Gamma X(g,x)$ simply as gx for bervity. A model M: X -> Y is equivariant to G under the group action of G on X and Y if M(gx) = g(M(x)) for all g $\in$ G, x $\in$ $\chi$. This essentially means that any group transformation g to the input $\Gamma X(g,x)$ should reflect an equivalent group transformation of the output  $\Gamma Y(g,M(x))$.
 
@@ -92,7 +92,7 @@ $$ M_G^{λ}(x) = \sum_{g \in G}^{|G|} g^{-1}λ(gx)M(gx) \frac{1}{\sum_{g \in G}{
 
 #### Transformer Aggregation
 
-This method aggregates the embeddings using the transformer and then passes the combined embeddings through the model's MLP head to get the final logits. Since the transformer operations (layer normalization, multi-head attention, and feed-forward networks) do not depend on the order of embeddings, the aggregated result is independent of the transformations applied to the input. The final logits are produced by passing the aggregated embeddings through the MLP head. This process is invariant to the transformations since it operates on the aggregated embeddings, which represent the transformed input space.
+This method aggregates the embeddings using the transformer and then passes the combined embeddings through the model's MLP head to get the final logits. Since the transformer operations (layer normalization, multi-head attention, and feed-forward networks) do not depend on the order of embeddings, the aggregated result is independent of the transformations applied to the input. The final logits are produced by passing the aggregated embeddings through the MLP head. This process is invariant to the transformations since it operates on the aggregated embeddings representing the transformed input space.
 
    $$
    M_G(x) = \text{Mlp}(\text{Transformer}(M(gx))), g\in G
@@ -104,7 +104,7 @@ $$
  M_G(x) = g( M_G(x))
 $$
 
-Therefore, the `PostHocLearnedAggregation` model is equivariant by design because the transformer aggregation maintains the equivariance property through its self-attention mechanism and the consistent application of transformations across the input space. The use of the class token ensures that the final output logits are derived in a manner that respects the input transformations.
+Therefore, the `PostHocLearnedAggregation` model is equivariant by design because the transformer aggregation maintains the equivariance property through its self-attention mechanism and the consistent application of transformations across the input space. Using the class token ensures that the final output logits are derived in a manner that respects the input transformations.
 
 ### Results
 We evaluated all approaches for different experiments where for each we investigate the zero-shot impact, the impact when we only finetune the last layer, and the impact of finetuning the whole model.
