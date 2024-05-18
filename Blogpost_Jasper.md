@@ -2,6 +2,43 @@
 
 [comment]: <Total blogpost should be a 20 minute read>
 
+
+### Wouter Bant, Colin Bot, Jasper Eppink, Clio Feng, Floris Six Dijkstra
+
+---
+In this blogpost, we dive deeper into E(2) equivariant Vision Transformers and we propose and evaluate alternative methods for the equivariant attention models discussed in ["E(2)-Equivariant Vision Transformer"](https://proceedings.mlr.press/v216/xu23b.html). This paper proposes a new Group-Equivariant Vision Transformer (GE-ViT), which introduces a new positional encoding for the traditional well known Vision Transformer (ViT) ["An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale" ](https://arxiv.org/abs/2010.11929)
+
+In particular, in this blogpost, we present:
+1. Evaluate existing and novel methods to make non equivariant (attention) models, equivariant by combining the predictions of different transformations, that reflect inductive biases, of the input.
+2. Evaluate a novel method to make modern ViTs (TODO cite google) equivariant by combining equivariant CNNs (TODO cite) to project patches to latent embeddings that will be uses as input to the equivariant vision transformer model used by (TODO cite paper).
+3. Visualize different layers of equivariant and non equivariant, with the aim to help researchers better understand these models. 
+---
+
+## The Importance of Equivariant Models (Jasper)
+In this section we motivate why one should be interested in equivariant models and discuss prior work. Equivariance is a fundamental property in various domains including image processing [Krizhevsky and Ilya 2012](https://proceedings.neurips.cc/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html), 3D point cloud analysis [Li, Chen and Lee 2018](https://openaccess.thecvf.com/content_cvpr_2018/html/Li_SO-Net_Self-Organizing_Network_CVPR_2018_paper.html), chemistry [Faber et al.](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.117.135502), astronomy [Ntampaka 2016](https://iopscience.iop.org/article/10.3847/0004-637X/831/2/135/meta), and economics [Qin et al. 2022](https://proceedings.neurips.cc/paper_files/paper/2022/hash/730d61b4d9ff794a028fa3a25b9b891d-Abstract-Conference.html). Equivariance in machine learning refers to the property of a function where applying a transformation to the input results in a corresponding transformation to the output. In simpler terms, if you shift, rotate, or scale the input, the output will shift, rotate, or scale in the same way, making the model's predictions consistent and reliable.
+
+
+Traditional Convolutional Neural Networks (CNNs) exhibit translation equivariance but lack equivariance to rotations in input data. [Cohen and Welling 2016](https://proceedings.mlr.press/v48/cohenc16.html) introduced the first equivariant neural network, which augmented the existing translation equivariance of CNNs by incorporating translation to discrete groups.
+In the realm of Natural Language Processing (NLP), [Vaswani et al. 2017](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html) introduced transformers, a model that gained significant prominence in its field. Recognizing the potential of this architecture in computer vision, [dosovitskiy et al. 2020](https://arxiv.org/abs/2010.11929) proposed the original vision transformer architecture. However, a limitation of their approach is necessitating positional encodings for each pixel patch, losing the translation or any other form of equivariance. Despite this drawback, vision transformers demonstrated noteworthy performance, achieving state-of-the-art results in various domains. To allow ViTs to be equivariant to affine groups, new positional encodings need to be proposed to replace the original positional encodings. 
+
+Iniitial attempts have been made to modify the self-attention to become equivariant. Before the release of the GE-ViT model, The most promising work in the field was proposed by [Romero et al. 2020](https://proceedings.mlr.press/v119/romero20a.html). They proposed Group Equivariant Stand Alone Self-Attention Networks (GSA-nets), which incorporated a different positional encoding strategy and modifications to the attention mechanism to ensure equivariance.
+
+
+!["Motivation equivariant ViT"](figures/rotation.gif)
+
+In the showcased GIF, the significance of equivariance becomes evident. Consistent outcomes in the above digit prediction is desirable, highlighting the importance of a model that maintains its predictions irrespective of image rotation. This attribute holds particular significance in fields such as cell analysis, where a model's ability to deliver consistent predictions regardless of image orientation is crucial.
+
+
+## Vision Tranformers (ViTs) and Equivariance (Jasper)
+In this section we discuss modern ViTs and older equivariant versions.
+
+Here we should display how positional encoding makes the model equivariant.
+
+## Discussion of (TODO cite paper) (Jasper????)
+Here we say that these methods are comp. expensive and some of our findings. eg steerable but also artifact like differences (show this with a figure). quickly mention we evaluate on validation set a increase batch size (and proportionally learning rate) because of computational constraints. Display the results we got for their methods here and say we use the reported numbers of the best method in the following parts of the blogpost. 
+
+
+
 #### Introduction
 
 [comment]: <Also add one paragraph of related work, should be similar to reviews on OpenReview.net>
