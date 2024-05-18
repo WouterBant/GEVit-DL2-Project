@@ -9,5 +9,7 @@ __pycache__
 .pytype
 data/*
 src/data/*
+src/demo/gif_tmps/*
+src/post_hoc_equivariance/saved_models/*
 !data/.gitkeep
 
