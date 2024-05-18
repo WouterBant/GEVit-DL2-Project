@@ -129,7 +129,7 @@ class GroupTransformer(nn.Module):
             num_heads,
             max_pos_embedding,
             attention_dropout_rate,
-            return_attn_probs=self.return_attn_probs            
+            # return_attn_probs=self.return_attn_probs            
         )
         self.lifting_normalization = self.Norm(num_channels)
         in_channels = num_channels
