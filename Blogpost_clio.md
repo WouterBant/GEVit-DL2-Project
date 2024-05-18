@@ -10,7 +10,7 @@ In this blogpost, we aim to propose and evaluate alternative methods for the equ
 
 In particular, in this blogpost, we present:
 1. Evaluate existing and novel methods to make non equivariant (attention) models [Lippe 2023](https://lightning.ai/docs/pytorch/stable/notebooks/course_UvA-DL/11-vision-transformer.html), [Dosovitskiy et al. 2021](https://arxiv.org/pdf/2010.11929), equivariant by combining the predictions of different transformations, that reflect inductive biases, of the input.
-2. Evaluate a novel method to make modern ViTs equivariant by combining equivariant CNNs (TODO cite) to project patches to latent embeddings that will be used as input to the equivariant vision transformer model used by (TODO cite paper).
+2. Evaluate a novel method to make modern ViTs equivariant by combining equivariant CNNs [Knigge 2023](https://github.com/phlippe/uvadlc_notebooks/blob/master/docs/tutorial_notebooks/DL2/Geometric_deep_learning/tutorial1_regular_group_convolutions_answered.ipynb) to project patches to latent embeddings that will be used as input to the equivariant vision transformer model used by [Xu et al.2023](https://arxiv.org/abs/2306.06722).
 3. Visualize different layers of equivariant and non equivariant, to help researchers better understand these models. 
 ---
 
