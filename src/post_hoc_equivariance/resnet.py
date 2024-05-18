@@ -165,7 +165,7 @@ def main(finetune):
     set_seed(42)
     model = PretrainedResnet50()
     model = model.to(device)
-    eq_model_mean = PostHocEquivariantMean(model, n_rotations=4, flips=True, finetune_mlp_head=finetune, finetune_model=finetune2)
+    eq_model_mean = PostHocEquivariantMean(model, n_rotations=4, flips=True, finetune_mlp_head=finetune)
     if finetune:
         eq_model_mean = train(eq_model_mean, n_epochs=3)
     # val_acc = evaluate(eq_model_mean)
@@ -178,7 +178,7 @@ def main(finetune):
     set_seed(42)
     model = PretrainedResnet50()
     model = model.to(device)
-    eq_model_max = PostHocEquivariantMax(model, n_rotations=4, flips=True, finetune_mlp_head=finetune, finetune_model=finetune2)
+    eq_model_max = PostHocEquivariantMax(model, n_rotations=4, flips=True, finetune_mlp_head=finetune)
     if finetune:
         eq_model_max = train(eq_model_max, n_epochs=3)
     val_acc = evaluate(eq_model_max)
@@ -190,7 +190,7 @@ def main(finetune):
     set_seed(42)
     model = PretrainedResnet50()
     model = model.to(device)
-    eq_model_sum = PostHocEquivariantSum(model, n_rotations=4, flips=True, finetune_mlp_head=finetune, finetune_model=finetune2)
+    eq_model_sum = PostHocEquivariantSum(model, n_rotations=4, flips=True, finetune_mlp_head=finetune)
     if finetune:
         eq_model_sum = train(eq_model_sum, n_epochs=3)
     val_acc = evaluate(eq_model_sum)
@@ -202,7 +202,7 @@ def main(finetune):
     set_seed(42)
     model = PretrainedResnet50()
     model = model.to(device)
-    eq_model_most_probable = PostHocEquivariantMostProbable(model, n_rotations=4, flips=True, finetune_mlp_head=finetune, finetune_model=finetune2)
+    eq_model_most_probable = PostHocEquivariantMostProbable(model, n_rotations=4, flips=True, finetune_mlp_head=finetune)
     if finetune:
         eq_model_most_probable = train(eq_model_most_probable, n_epochs=3)
     val_acc = evaluate(eq_model_most_probable)
@@ -214,7 +214,7 @@ def main(finetune):
     set_seed(42)
     model = PretrainedResnet50()
     model = model.to(device)
-    eq_model_most_certain = PostHocMostCertain(model, n_rotations=4, flips=True, finetune_mlp_head=finetune, finetune_model=finetune2)
+    eq_model_most_certain = PostHocMostCertain(model, n_rotations=4, flips=True, finetune_mlp_head=finetune)
     if finetune:
         eq_model_most_certain = train(eq_model_most_certain, n_epochs=3)
     val_acc = evaluate(eq_model_most_certain)
