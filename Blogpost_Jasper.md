@@ -89,9 +89,11 @@ $$\begin{align}
     PE_{(pos,2i)} &= sin(pos/10000^{2i/d_{\text{model}}}) \\
     PE_{(pos,2i+1)} &= cos(pos/10000^{2i/d_{\text{model}}})
 \end{align}$$
-In the above equations, $pos$ is the position and $i$ is the dimension. The exact details about the transformer architecture can be found in ["Attention is All you Need"](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html)
+In the above equations, $pos$ is the position and $i$ is the dimension. The exact details about the transformer architecture can be found in ["Attention is All you Need"](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html).
 
 <strong> Vision Transformer: </strong>
+
+The ViT closely follows the original Transformer architecture ["An Image is Worth...](https://arxiv.org/abs/2010.11929). The standard Transformer receives a 1D sequency of token embeddings as input. For the ViT to handle 2D images, the image $x \in \mathbb{R}^{H \times W \times C}$ is reshaped into a sequence of flattened 2D patches $x_p \in \mathbb{R}^{N \times (P^2 \cdot C)}$. In this input $H$ is the height of the input image, $W$ is the width, $C$ is the number of channels (3 for RGB images). Furthermore $(P,P)$ is the resolution of each image patch and $N=HW/P^2$ is the number of patches and thereby the input sequence length to the transformer. The ViT uses a constant latent vector size $D$ in all its layers, so each patch is flattened and mapped to $D$ dimensions. This flattening is done using a trainable linear projection. This results in each patch $P$ getting its own patch embedding. A schematic scheme of the architecture is shown in Figure 5.
 
 <table align="center">
   <tr align="center">
@@ -102,6 +104,8 @@ In the above equations, $pos$ is the position and $i$ is the dimension. The exac
   </tr>
 </table>
 
+From the above scheme and some intuition, it becomes clear that this architecture is not equivariant to translations and rotations as each translation or rotation results in a completly new patch embedding.
+
 ---
 ## Using positional encodings to make the model equivariant (Colin)
 
@@ -110,6 +114,9 @@ I (Jasper) propose to insert Colins part about how the positional encodings work
 [comment]: <Here we should display how positional encoding makes the model equivariant.>
 ---
 ## Discussion of (TODO cite paper) (Jasper, NOG NIET AF)
+
+WILL DO THIS ON SUNDAY
+
 Here we say that these methods are comp. expensive and some of our findings. eg steerable but also artifact like differences (show this with a figure). quickly mention we evaluate on validation set a increase batch size (and proportionally learning rate) because of computational constraints. Display the results we got for their methods here and say we use the reported numbers of the best method in the following parts of the blogpost. 
 
 
