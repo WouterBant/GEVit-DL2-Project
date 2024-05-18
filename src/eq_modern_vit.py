@@ -13,6 +13,7 @@ from train_vit import VisionTransformer
 import os
 import models
 import g_selfatt.groups as groups
+from torchvision.transforms.functional import InterpolationMode
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -77,7 +78,7 @@ def get_transforms(images, n_rotations=4, flips=True):
     # rotations
     for i in range(1, n_rotations):
         angle = i * (360 / n_rotations)
-        rotated_images = TF.rotate(images, angle)  # B, C, H, W
+        rotated_images = TF.rotate(images, angle, interpolation=InterpolationMode.BILINEAR)  # B, C, H, W
         transforms[:, idx,...] = rotated_images
         idx += 1
 
@@ -90,7 +91,7 @@ def get_transforms(images, n_rotations=4, flips=True):
         transforms[:, idx, ...] = flipped_image
         idx += 1
 
-    return transforms  # B, T, C, H, W
+    return transforms.to(device)  # B, T, C, H, W
 
 
 def img_to_patch(x, patch_size, flatten_channels=True):
