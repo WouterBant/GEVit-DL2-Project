@@ -531,7 +531,11 @@ A notable observation is the considerable gap between validation and test accura
 Furthermore, our findings demonstrate the superiority of large models over GSA-nets and GE-ViTs. However, it's crucial to acknowledge the parameter discrepancy, comparing models with 45,000 parameters to one of 23.6 million. Attempting to scale up GE-ViTs to over a million parameters was not feasible for us, exceeding the limitations of our 40GB RAM GPU with a batch size of 1. While this indicates poor scalability, it's worth exploring how these models perform when scaled up, given our evidence that integrating inductive biases significantly enhances performance.
 
 ## Introducing Equivariant Modern ViTs
-Explain this and make figure to display architecture.
+GSA-Nets and GE-ViTs are slow because attention is applied on the pixel level. One way to reduce the computational complexity is to reduce the number of pixels in the image. For this we create an artificial image, where patches are projected to a single vector representing the new pixel in the artificial image. The entire piple in visualized in the image below:
+![modern_eq_vit](figures/modern_eq_vit.png) 
+> As in the normal ViT we create patches, however, these patches are lifted to the group and the resulting transformations are each processed by the same model. Afterwards, the image are invariantly aggregated over the group and reshaped to the original image structure but now with less pixels. The resulting artificial image is fed to GE-ViT as normal.
+
+We experiment with two ways of obtaining invariant patch embeddings. First we experiment with using a normal neural network to obatain emeddings that we combine with mean pooling. Second, we apply an equivariant CNN onto image patches directly and use that output for pixel embedding.
 
 ## Concluding Remarks
 TODO make table with inference and training speeds of all models together with # of parameters
