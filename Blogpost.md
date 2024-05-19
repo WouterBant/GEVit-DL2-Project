@@ -151,9 +151,9 @@ The structure of GE-ViT and attention block is visualized below in Figure 6.
   </tr>
 </table>
 
-First, the lifting self-attention mechanism transforms the input from the standard 2D space ($ R^2 $) into a higher-dimensional space where group transformations are encoded, as detailed in the section on GE-ViT attention and positional embedding. The resulting features are subsequently normalized using layer normalization and activated with the Swish function.
+First, the lifting self-attention mechanism transforms the input from the standard 2D space ($R^2$) into a higher-dimensional space where group transformations are encoded, as detailed in the section on GE-ViT attention and positional embedding. The resulting features are subsequently normalized using layer normalization and activated with the Swish function.
 
-Next, these features are processed through $ N $ layers of attention blocks to refine the feature representations iteratively. The GE self-attention mechanism incorporates both lifting self-attention and group self-attention. The linear layers represent the fully connected neural network components.
+Next, these features are processed through $N$ layers of attention blocks to refine the feature representations iteratively. The GE self-attention mechanism incorporates both lifting self-attention and group self-attention. The linear layers represent the fully connected neural network components.
 
 Finally, the global pooling block aggregates these features in a transformation-invariant manner across the spatial dimensions. Initially, max pooling is applied both spatially and over the group elements to ensure that the pooled features remain invariant to transformations. Subsequently, spatial averaging is performed on the features, further reducing their dimensionality and summarizing the feature map.
 
@@ -230,7 +230,7 @@ $$ M_G(x) = \frac{\sum_{g \in G}{g^{-1}M(gx)}}{|G|} $$
 
 Max Pooling:
 
-$$ (M_G(x))_i = \max_{g \in G}({g^{-1}M(gx)})_i $$
+$$ (M_G(x))i = \max_{g \in G}({g^{-1}M(gx)})_i $$
 
 Summing latent dimensions: 
 
