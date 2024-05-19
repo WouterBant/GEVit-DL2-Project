@@ -134,6 +134,20 @@ The final attention mechanism was visualized for a pixel in the center of an ima
 
 ![figure](figures/GEVIT_attention.gif)
 
+
+### GE-ViT Architecture
+
+The structure of GE-ViT and attention block can be visualized below in Figure 6. 
+
+<table align="center">
+  <tr align="center">
+      <td><img src="figures/GEVIT.png" width=600></td>
+  </tr>
+  <tr align="left">
+    <td colspan=2><b>Figure 6.</b> Illustration of GE-ViT and Attention Block </td>
+  </tr>
+</table>
+
 ---
 
 ## Discussion of (TODO cite paper) (Jasper, NOG NIET AF)
