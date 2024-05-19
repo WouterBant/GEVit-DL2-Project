@@ -17,7 +17,7 @@ For the full analysis see [our blogpost](Blogpost.md), but to give a little prev
       <td><img src="figures/meanagg_vs_mostprobable.png" width=600></td>
   </tr>
   <tr align="left">
-    <td colspan=2><b>Figure TODO NUMBER.</b> Comparing predicted probabilities from the MeanAggregation and MostProbable post-hoc equivariant transformer models in an edge case where a 6 is rotated to possibly be confused with a 9.</td>
+    <td colspan=2>Comparing predicted probabilities from the MeanAggregation and MostProbable post-hoc equivariant transformer models in an edge case where a 6 is rotated to possibly be confused with a 9.</td>
   </tr>
 </table>
 
