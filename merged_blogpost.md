@@ -41,7 +41,7 @@ In Figure 1, the significance of equivariance becomes evident. Consistent outcom
 
 In recent years, The Transformer architecture ["Attention is all you need"](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html) has had a huge impact in natural language processing (NLP). The success of this architecture has paved the way for an adaptation in computer vision, giving rise to Vision Transformers (ViTs).
 
-The transformer architecture works by having an encoder-decoder structure. The encoder maps an input sequence $(x_1, ..., x_n)$ to a continous latent variable denoted as $z=(z_1, ...,z_n)$. Using this latent variable $z$, the decoder generates an output sequence $y=(y_1, ..., y_m)$ one element at a time. During each generating time step, the model utilizes its previously generated output. Within this encoder and decoder structure, the architectures uses self-attention and fully connected layers. The attention mechanism will be explained in the next paragraph. The full architecture is depicted in Figure 2.
+The transformer architecture operates using an encoder-decoder structure. The encoder maps an input sequence $(x_1, ..., x_n)$ to a continuous latent variable denoted as $z=(z_1, ...,z_n)$. Using this latent variable $z$, the decoder generates an output sequence $y=(y_1, ..., y_m)$ one element at a time. At each generating time step, the model utilizes its previously generated output. Within this encoder and decoder structure, the architecture employs self-attention and fully connected layers. The attention mechanism will be explained in the next paragraph. The complete architecture is illustrated in Figure 2.
 
 <table align="center">
   <tr align="center">
@@ -157,7 +157,7 @@ One of the main weaknesses that we seek to explore with their proposed method ar
 
 <strong> Our novel contribution </strong>
 
-Some of the contributions that we want to add to this paper are already briefly discussed in the section above as we want to improve upon all the weaknesses mentioned. Furthermore, we also propose a novel architecture which utilizes a combination of a group-equivariant CNN together with a transformer and see if this is able to outperform their baseline
+Some of the contributions that we want to add to this paper are already briefly discussed in the section above as we want to improve upon all the weaknesses mentioned. Furthermore, we also propose a novel architecture that utilizes a combination of a group-equivariant CNN together with a transformer and see if this is able to outperform their baseline
 
 - The ViT we propose uses a patch size (the normal one) of 4x4. So 49 patches in total. Now you compute attention globally with respect to the other patches and yourself. If all other settings are the same we have that you do this for 49*9*4=1764 patches in total, making a total of 49*1764=86,436 attention computations for the lifting layer. This should make it about 26 times faster, so for rotmnist 10 hours/26=23 minutes.
 
@@ -560,7 +560,7 @@ We also evaluated the performance of GE-ViT when trained on a reduced dataset co
     </tbody>
 </table>
 
-In line with our findings on the full rotation MNIST dataset, we find that learning to aggregate the embeddings often resulted in overfitting. Also, the other methods consistently enhanced performance, with fine-tuning showing even greater improvements, and mean pooling and summing of latent dimensions lead to the highest accuracies. Remarkably, our non-equivariant ViT already surpassed the GE-ViT in performance. Throughout our experiments, we observed that GE-ViT exhibited high sensitivity to minor changes in hyperparameters. We hypothesize that optimizing hyperparameters could potentially yield higher accuracy. However, due to computational constraints, we didn't explore this further.
+In line with our findings on the full rotation MNIST dataset, we find that learning to aggregate the embeddings often resulted in overfitting. Also, the other methods consistently enhanced performance, with fine-tuning showing even greater improvements, and mean pooling and summing of latent dimensions led to the highest accuracies. Remarkably, our non-equivariant ViT already surpassed the GE-ViT in performance. Throughout our experiments, we observed that GE-ViT exhibited high sensitivity to minor changes in hyperparameters. We hypothesize that optimizing hyperparameters could potentially yield higher accuracy. However, due to computational constraints, we didn't explore this further.
 
 #### 4. Evaluating a pretrained RESNET-50 on Patch Camelyon
 Until now, our analysis has been limited to our own models trained exclusively on either MNIST or rotation MNIST. However, it's worth noting that the post hoc methods discussed can be applied to pretrained models trained on various datasets. To validate the robustness of our findings, we use a [trained RESNET-50 model](https://huggingface.co/1aurent/resnet50.tiatoolbox-pcam). We are grateful to TIAToolbox for offering a wide range of pretrained models for this dataset, we found it challenging to find well-performing models elsewhere.
