@@ -8,58 +8,25 @@ import copy
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import math
-from datasets import MNIST_rot
-from train_vit import VisionTransformer
+from datasets import MNIST_rot, PCam
 import os
 import models
 import g_selfatt.groups as groups
-from torchvision.transforms.functional import InterpolationMode
+import argparse
+import random
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device("cpu")
+torch.autograd.set_detect_anomaly(True)
 
-data_mean = (0.1307,)
-data_stddev = (0.3081,)
+class CustomRotation(object):
+    def __init__(self, angles):
+        self.angles = angles
 
-transform_train = tvtf.Compose([
-    tvtf.RandomRotation(degrees=(-180, 180)),  # random rotation
-    tvtf.ToTensor(),
-    tvtf.Normalize(data_mean, data_stddev)
-])
-transform_test = tvtf.Compose(
-    [
-        tvtf.ToTensor(),
-        tvtf.Normalize(data_mean, data_stddev),
-    ]
-)
+    def __call__(self, img):
+        angle = random.choice(self.angles)
+        return tvtf.functional.rotate(img, angle)
 
-train_set = MNIST_rot(root="../data", stage="train", download=True, transform=transform_train, data_fraction=1, only_3_and_8=False)
-validation_set = MNIST_rot(root="../data", stage="validation", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
-test_set = MNIST_rot(root="../data", stage="test", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
-
-train_loader = torch.utils.data.DataLoader(
-    train_set,
-    batch_size=16,
-    shuffle=True,
-    num_workers=4,
-)
-val_loader = torch.utils.data.DataLoader(
-    validation_set,
-    batch_size=128,
-    shuffle=True,
-    num_workers=4,
-)
-test_loader = torch.utils.data.DataLoader(
-    test_set,
-    batch_size=128,
-    shuffle=False,
-    num_workers=4,
-)
-img_loader = torch.utils.data.DataLoader(  # single element for visualization purposes
-    test_set,
-    batch_size=1,
-    shuffle=False,
-    num_workers=4,
-)
 
 def get_transforms(images, n_rotations=4, flips=True):
     """ Returns all transformations of the input images """
@@ -68,7 +35,7 @@ def get_transforms(images, n_rotations=4, flips=True):
     T = 2*n_rotations if flips else n_rotations  # number of transformations
 
     # initialize empty transforms tensor
-    transforms = torch.empty(size=(B, T, C, H, W))
+    transforms = torch.empty(size=(B, T, C, H, W)) #.to(device)
     transforms[:, 0,...] = images
     idx = 1
 
@@ -78,7 +45,7 @@ def get_transforms(images, n_rotations=4, flips=True):
     # rotations
     for i in range(1, n_rotations):
         angle = i * (360 / n_rotations)
-        rotated_images = TF.rotate(images, angle, interpolation=InterpolationMode.BILINEAR)  # B, C, H, W
+        rotated_images = TF.rotate(images, angle)  # B, C, H, W
         transforms[:, idx,...] = rotated_images
         idx += 1
 
@@ -112,7 +79,7 @@ def img_to_patch(x, patch_size, flatten_channels=True):
 
 
 class EquivariantViT(nn.Module):
-    def __init__(self, patch_size=7, num_patches=16, num_channels=1, n_rotations=4, flips=True, n_embd=1):
+    def __init__(self, patch_size=7, num_patches=16, num_channels=1, n_rotations=4, flips=False, n_embd=64, att_patch_size=None, num_classes=10):
         super().__init__()
         self.patch_size = patch_size
         self.num_channels = num_channels  
@@ -121,27 +88,27 @@ class EquivariantViT(nn.Module):
         self.n_embd = n_embd
         self.num_patches_x = int(math.sqrt(num_patches))
         # below can be more intricate, but for now we just use a linear layer
-        self.project = nn.Linear(num_channels*patch_size**2, n_embd)  # to project the patches to their embedding space
-        self.gevit = models.GroupTransformer(
-            group=groups.SE2(num_elements=8),
-            in_channels=1,
+        self.project = nn.Linear(num_channels*patch_size**2, n_embd).to(device)  # to project the patches to their embedding space
+        self.gevit =  models.GroupTransformer(
+            group=groups.E2(num_elements=8),
+            in_channels=n_embd,
             num_channels=20,
             block_sizes=[2, 3],
             expansion_per_block=1,
             crop_per_layer=[0, 0, 0, 0, 0],
             image_size=self.num_patches_x,
-            num_classes=10,
+            num_classes=num_classes,
             dropout_rate_after_maxpooling=0.0,
             maxpool_after_last_block=False,
             normalize_between_layers=False,
-            patch_size=None,
+            patch_size=att_patch_size,
             num_heads=9,
             norm_type="LayerNorm",
             activation_function="Swish",
             attention_dropout_rate=0.0,
             value_dropout_rate=0.01,
             whitening_scale=1.41421356,
-        )
+        ).to(device)
 
     def forward(self, x):
         # get the patches
@@ -165,29 +132,92 @@ class EquivariantViT(nn.Module):
         # reshape to image grid
         x = x.view(B, self.num_patches_x, self.num_patches_x, self.n_embd).permute(0, 3, 1, 2)
 
-        # print(x.shape)
+        # x = x.clip(0, 1)
+        x = torch.sigmoid(x) + 1e-6
+
+        print(torch.isnan(x).any().item() or torch.isinf(x).any().item())
+
         # pass through the GEViT to get predictions
         x = self.gevit(x)
-
+        print(x)
+        print(torch.isnan(x).any().item() or torch.isinf(x).any().item(), "hi)")
         return x
 
 
-def main():
-    os.environ["WANDB_API_KEY"] = "691777d26bb25439a75be52632da71d865d3a671"  # TODO change this if we are doing serious runs
-    wandb.init(
-        project="non-equivariant-vit",
-        entity="equivatt_team",
+def main(args):
+    os.environ["WANDB_API_KEY"] = "26de9d19e20ea7e7f7352e5b36f139df8d145bc8"  # TODO change this if we are doing serious runs
+
+    if args.rotmnist:
+        data_mean = (0.1307,)
+        data_stddev = (0.3081,)
+        transform_train = tvtf.Compose([
+            tvtf.RandomRotation(degrees=(-180, 180)),  # Random rotation
+            tvtf.ToTensor(),
+            tvtf.Normalize(data_mean, data_stddev)
+        ])
+    else:
+        data_mean = (0.701, 0.538, 0.692)
+        data_stddev = (0.235, 0.277, 0.213)
+        transform_train = tvtf.Compose([
+            CustomRotation([0, 90, 180, 270]),
+            tvtf.RandomHorizontalFlip(),  # Random horizontal flip with a probability of 0.5
+            tvtf.RandomVerticalFlip(),
+            tvtf.ToTensor(),
+            tvtf.Normalize(data_mean, data_stddev)
+        ])
+    
+    transform_test = tvtf.Compose(
+        [
+            tvtf.ToTensor(),
+            tvtf.Normalize(data_mean, data_stddev),
+        ]
     )
 
-    model = EquivariantViT()
+    if args.rotmnist:
+        train_set = MNIST_rot(root="../data", stage="train", download=True, transform=transform_train, data_fraction=1, only_3_and_8=False)
+        validation_set = MNIST_rot(root="../data", stage="validation", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
+        test_set = MNIST_rot(root="../data", stage="test", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
+    else:
+        train_set = PCam(root="data", train=True, download=True, transform=transform_train)
+        validation_set = PCam(root="data", train=False, valid=True, download=True, transform=transform_test)
+        test_set = PCam(root="data", train=False, download=True, transform=transform_test)
 
+    train_loader = torch.utils.data.DataLoader(
+        train_set,
+        batch_size=64,
+        shuffle=True,
+        num_workers=4,
+    )
+    val_loader = torch.utils.data.DataLoader(
+        validation_set,
+        batch_size=128,
+        shuffle=True,
+        num_workers=4,
+    )
+    test_loader = torch.utils.data.DataLoader(
+        test_set,
+        batch_size=128,
+        shuffle=False,
+        num_workers=4,
+    )
+
+    wandb.init(
+        project="wouters_eq_vit",
+        group="rotmnist",
+        entity="ge_vit_DL2",
+    )
+
+    if args.rotmnist:
+        model = EquivariantViT().to(device)
+    else:
+        model = EquivariantViT(patch_size=6, num_patches=256, num_classes=2, num_channels=3, n_rotations=4, flips=True, n_embd=64, att_patch_size=3).to(device)
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), 0.001)
+    optimizer = torch.optim.Adam(model.parameters(), 0.01)
 
     best_model = copy.deepcopy(model.state_dict())
     best_val_acc = 0
 
-    for epoch in range(500):
+    for epoch in range(100):
         model.train()
         losses = []
         for inputs, labels in train_loader:
@@ -195,8 +225,10 @@ def main():
             optimizer.zero_grad()
             out = model(inputs)
             loss = criterion(out, labels)
-            optimizer.zero_grad()
+            print(loss)
+            if loss.isnan(): continue
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()  # Update weights
             losses.append(loss.item())
         wandb.log({"loss_train":sum(losses)/len(losses)}, step=epoch+1)
@@ -244,5 +276,14 @@ def main():
     torch.save(model.state_dict(), os.path.join(wandb.run.dir, "modern_eq_vit.pt"))
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Argument Parser for Model Configuration")
+
+    parser.add_argument("--rotmnist", action="store_true", help="Training for rotmnist")
+
+    args = parser.parse_args()
+    return args
+
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    main(args)
