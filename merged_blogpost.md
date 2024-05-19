@@ -8,9 +8,9 @@
 In this blogpost, we dive deeper into E(2) equivariant Vision Transformers and we propose and evaluate alternative methods for the equivariant attention models discussed in ["E(2)-Equivariant Vision Transformer"](https://proceedings.mlr.press/v216/xu23b.html). This paper proposes a new Group-Equivariant Vision Transformer (GE-ViT), which introduces a new positional encoding for the traditional well-known Vision Transformer (ViT) ["An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale" ](https://arxiv.org/abs/2010.11929)
 
 In particular, in this blogpost, we present:
-1. Evaluate existing and novel methods to make non-equivariant (attention) models, equivariant by combining the predictions of different transformations, that reflect inductive biases, of the input.
-2. Evaluate a novel method to make modern ViTs (TODO cite google) equivariant by combining equivariant CNNs (TODO cite) to project patches to latent embeddings that will be used as input to the equivariant vision transformer model used by (TODO cite paper).
-3. Visualize different layers of equivariant and non-equivariant, to help researchers better understand these models. 
+1. Evaluate existing and novel methods to make non equivariant (attention) models [Lippe 2023](https://lightning.ai/docs/pytorch/stable/notebooks/course_UvA-DL/11-vision-transformer.html), [Dosovitskiy et al. 2021](https://arxiv.org/pdf/2010.11929), equivariant by combining the predictions of different transformations, that reflect inductive biases, of the input.
+2. Evaluate a novel method to make modern ViTs equivariant by combining equivariant CNNs [Knigge 2023](https://github.com/phlippe/uvadlc_notebooks/blob/master/docs/tutorial_notebooks/DL2/Geometric_deep_learning/tutorial1_regular_group_convolutions_answered.ipynb) to project patches to latent embeddings that will be used as input to the equivariant vision transformer model used by [Xu et al.2023](https://arxiv.org/abs/2306.06722).
+3. Visualize different layers of equivariant and non equivariant, to help researchers better understand these models. 
 ---
 
 ## The Importance of Equivariant Models
@@ -24,7 +24,7 @@ Initial attempts have been made to modify self-attention to become equivariant. 
 
 <table align="center">
   <tr align="center">
-      <td><img src="figures/rotation.gif" width=600></td>
+      <td><img src="figures/Rotation.gif" width=600></td>
   </tr>
   <tr align="left">
     <td colspan=2><b>Figure 1.</b> The effect of rotation on the predicted digit for the GE-ViT and the standard ViT</td>
@@ -88,6 +88,7 @@ $$\begin{align}
     PE_{(pos,2i)} &= sin(pos/10000^{2i/d_{\text{model}}}) \\
     PE_{(pos,2i+1)} &= cos(pos/10000^{2i/d_{\text{model}}})
 \end{align}$$
+
 In the above equations, $pos$ is the position and $i$ is the dimension. The exact details about the transformer architecture can be found in ["Attention is All you Need"](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html).
 
 <strong> Vision Transformer: </strong>
