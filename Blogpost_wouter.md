@@ -26,6 +26,8 @@ Here we should display how positional encoding makes the model equivariant.
 ## Discussion of (TODO cite paper)
 Here we say that these methods are comp. expensive and some of our findings. eg steerable but also artifact like differences (show this with a figure). quickly mention we evaluate on validation set a increase batch size (and proportionally learning rate) because of computational constraints. Display the results we got for their methods here and say we use the reported numbers of the best method in the following parts of the blogpost. 
 
+![not steerable](figures/not_steerable.png)
+
 ## Post Hoc Equivariant Models
 ### Introduction
 Equivariant models offer many advantages, but they are often memory-intensive and require numerous epochs to converge. This has hindered their widespread adoption. To address this issue, we have built upon the work of Basu (TODO citation needed) to make any image classification model equivariant with minimal ot no fine-tuning.
