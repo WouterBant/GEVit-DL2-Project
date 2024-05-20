@@ -1,18 +1,25 @@
-## How to reproduce our post hoc experiments
+## Reproducing results for the post-hoc experiments
 
 > Download patch Camelyon here:
 https://drive.google.com/file/d/1THSEUCO3zg74NKf_eb3ysKiiq2182iMH/view?usp=sharing
 
 ---
-### Training base model
-First of all, all our results are stored in the folder results
 
-To train one of the models simply call:
+- All our results are stored in the [results](results) folder
+- We provide checkpoints for various pretrained models in the [checkpoints](checkpoints) folder
+
+### Training base model
+To train on Rotation Mnist or Patch Camelyon simply call:
 ```bash
 python train_vit.py [--rotmnist]
 ```
 
---rotmnist: if you want to train on the rotation MNIST dataset else you train on patch Camelyon
+- --rotmnist: if you want to train on the rotation MNIST dataset else you train on patch Camelyon
+
+To train a model on normal MNIST:
+```bash
+python mnist.py
+```
 
 ---
 
@@ -22,7 +29,7 @@ To run the experiments for the pretrained resnet, simply run (note that you need
 resnet.py [--finetune]
 ```
 
---finetune: will finetune the last layer (experiments showed that finetuning the entire model is not beneficial)
+- --finetune: will finetune the last layer (experiments showed that finetuning the entire model is not beneficial)
 
 ---
 
@@ -32,13 +39,13 @@ All other experiments can be reproduced with:
 python post_hoc_experiments.py --model_path path_to_model [--n_rotations] [--flips] [--finetune_model] [--finetune_mlp_head] [--pcam]
 ```
 
---n_rotations: the number of rotations to take for the test time augmentations of the input. For rotation MNIST experiments we found that 16 works best and 4 for patch Camelyon
+- --n_rotations: the number of rotations to take for the test time augmentations of the input. For rotation MNIST experiments we found that 16 works best and 4 for patch Camelyon
 
---flips: if passed in the command the different rotations will be flipped too, note that this is not desired for rotation MNIST, but it is used for patch Camelyon.
+- --flips: if passed in the command the different rotations will be flipped too, note that this is not desired for rotation MNIST, but it is used for patch Camelyon.
 
---finetune_model: passing this argument will allow you to finetune the entire 
+- --finetune_model: passing this argument will allow you to finetune the entire 
 
---finetune_mlp_head: passing this argument will allow you to finetune the final layer
+- --finetune_mlp_head: passing this argument will allow you to finetune the final layer
 
 ---
 
