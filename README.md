@@ -17,15 +17,11 @@ For the full analysis see [our blogpost](Blogpost.md), but to give a little prev
 
 <table align="center">
   <tr align="center">
-      <td><img src="figures/posthocaggregation.png" width=600></td>
+      <td><img src="figures/posthocaggregation.png" width="600"></td>
+      <td><img src="figures/meanagg_vs_mostprobable.png" width="657"></td>
   </tr>
 </table>
 
-<table align="center">
-  <tr align="center">
-      <td><img src="figures/meanagg_vs_mostprobable.png" width=600></td>
-  </tr>
-</table>
 
 - ⚡ Speed up GE-ViTs by projecting the image to an artificial image with lower spatial resolution for less attention computations:
 <table align="center">
