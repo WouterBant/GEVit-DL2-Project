@@ -1,39 +1,6 @@
 import torch
 import torch.nn as nn
-import torchvision.transforms.functional as TF
-
-
-def get_transforms(images, n_rotations=4, flips=True):
-    """ Returns all transformations of the input images """
-
-    B, C, H, W = images.shape
-    T = 2*n_rotations if flips else n_rotations  # number of transformations
-
-    # initialize empty transforms tensor
-    transforms = torch.empty(size=(B, T, C, H, W))
-    transforms[:, 0,...] = images
-    idx = 1
-
-    # remember all orientations that need to be flipped
-    orientations = [images] if flips else []
-
-    # rotations
-    for i in range(1, n_rotations):
-        angle = i * (360 / n_rotations)
-        rotated_images = TF.rotate(images, angle)  # B, C, H, W
-        transforms[:, idx,...] = rotated_images
-        idx += 1
-
-        if flips:
-            orientations.append(rotated_images)
-
-    # flips
-    for transform in orientations:
-        flipped_image = TF.hflip(transform)
-        transforms[:, idx, ...] = flipped_image
-        idx += 1
-
-    return transforms  # B, T, C, H, W
+from utils import get_transforms
 
 
 class PostHocEquivariant(nn.Module):
