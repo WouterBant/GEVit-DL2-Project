@@ -36,8 +36,6 @@ def get_transforms(images, n_rotations=4, flips=True):
     return transforms  # B, T, C, H, W
 
 
-# TODO come up with fancy names for these variations these suck
-
 class PostHocEquivariant(nn.Module):
     """ General class for the different types of equivariant models """
 
@@ -135,11 +133,12 @@ class PostHocEquivariantMostProbable(PostHocEquivariant):
         logits = logits.view(B, T, -1)  # B, T, n_classes
         return logits  # here the logits are the embeddings we use
 
-    def project_embeddings(self, embeddings):
-        probs = torch.softmax(embeddings, dim=2)  # over the classes
-        mle = torch.prod(probs, dim=1)  # over the different transformations
-        mle = mle / mle.sum(dim=1, keepdim=True)  # normalize
-        logits = torch.log(mle+1e-8) - torch.log(1-mle+1e-8)  # convert to logits
+    def project_embeddings(self, embeddings, epsilon=1e-8):
+        B, T, n_classes = embeddings.shape  # NOTE T is not temperature but turns out to give stable gradients that way
+        probs = torch.softmax(embeddings / (T//2), dim=2)  # apply softmax over the class dimension and smooth
+        mle = torch.prod(probs, dim=1)  # calculate the product of probabilities over transformations
+        mle = mle / mle.sum(dim=1, keepdim=True)  # normalize probabilities
+        logits = torch.log((mle + epsilon) / (1 - mle + epsilon))  # convert to logits
         return logits
 
 

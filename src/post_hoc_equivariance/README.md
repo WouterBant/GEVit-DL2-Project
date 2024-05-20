@@ -1,8 +1,10 @@
-How to reproduce our results
+## How to reproduce our post hoc experiments
 
-Download patch Camelyon here:
+> Download patch Camelyon here:
 https://drive.google.com/file/d/1THSEUCO3zg74NKf_eb3ysKiiq2182iMH/view?usp=sharing
 
+---
+### Training base model
 First of all, all our results are stored in the folder results
 
 To train one of the models simply call:
@@ -12,8 +14,9 @@ python train_vit.py [--rotmnist]
 
 --rotmnist: if you want to train on the rotation MNIST dataset else you train on patch Camelyon
 
-For all experiments we experiment with, no finetuning, only fintuning the last layer, and finetuning the entire model.
+---
 
+### Experiments for pretrained resnet
 To run the experiments for the pretrained resnet, simply run (note that you need to install the patch Camelyon dataset yourself):
 ```bash
 resnet.py [--finetune]
@@ -21,6 +24,9 @@ resnet.py [--finetune]
 
 --finetune: will finetune the last layer (experiments showed that finetuning the entire model is not beneficial)
 
+---
+
+### Other experiments general
 All other experiments can be reproduced with:
 ```bash
 python post_hoc_experiments.py --model_path path_to_model [--n_rotations] [--flips] [--finetune_model] [--finetune_mlp_head] [--pcam]
@@ -34,12 +40,9 @@ python post_hoc_experiments.py --model_path path_to_model [--n_rotations] [--fli
 
 --finetune_mlp_head: passing this argument will allow you to finetune the final layer
 
+---
 
-For all experiments checkpoints can be found in the checkpoints folder
-
-We differ from the main environmnet and use more modern pytorch/torchvision versions
-
-Experiments:
+### Other experiments commands
 - less_data_rotmnist: Here we train on 10% of the training set of rotation mnist and evaluate on the entire test set
 ```bash
 python post_hoc_experiments.py --model_path checkpoints/less_data_rotmnist/normal_vit.pt --n_rotations 16 --less_data [--finetune_model] [--finetune_mlp_head] 
