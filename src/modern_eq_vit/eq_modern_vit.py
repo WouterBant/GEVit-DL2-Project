@@ -1,23 +1,26 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torchvision.transforms as tvtf
-import torchvision.transforms.functional as TF
-import wandb
-import copy
-from tqdm import tqdm
-import matplotlib.pyplot as plt
-import math
-from datasets import MNIST_rot, PCam
-import os
+import sys
+sys.path.append("..")
 import models
 import g_selfatt.groups as groups
-import argparse
+from datasets import MNIST_rot, PCam
+
+import torch
+import torch.nn as nn
+import torchvision.transforms as tvtf
+import torchvision.transforms.functional as TF
+
+
+import os
+import copy
+import math
+import wandb
 import random
+import argparse
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# device = torch.device("cpu")
 torch.autograd.set_detect_anomaly(True)
+
 
 class CustomRotation(object):
     def __init__(self, angles):
@@ -135,17 +138,13 @@ class EquivariantViT(nn.Module):
         # x = x.clip(0, 1)
         x = torch.sigmoid(x) + 1e-6
 
-        print(torch.isnan(x).any().item() or torch.isinf(x).any().item())
-
         # pass through the GEViT to get predictions
         x = self.gevit(x)
-        print(x)
-        print(torch.isnan(x).any().item() or torch.isinf(x).any().item(), "hi)")
         return x
 
 
 def main(args):
-    os.environ["WANDB_API_KEY"] = "26de9d19e20ea7e7f7352e5b36f139df8d145bc8"  # TODO change this if we are doing serious runs
+    os.environ["WANDB_API_KEY"] = ""  # TODO insert your wandb key
 
     if args.rotmnist:
         data_mean = (0.1307,)
@@ -178,9 +177,9 @@ def main(args):
         validation_set = MNIST_rot(root="../data", stage="validation", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
         test_set = MNIST_rot(root="../data", stage="test", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
     else:
-        train_set = PCam(root="data", train=True, download=True, transform=transform_train)
-        validation_set = PCam(root="data", train=False, valid=True, download=True, transform=transform_test)
-        test_set = PCam(root="data", train=False, download=True, transform=transform_test)
+        train_set = PCam(root="../data", train=True, download=True, transform=transform_train)
+        validation_set = PCam(root="../data", train=False, valid=True, download=True, transform=transform_test)
+        test_set = PCam(root="../data", train=False, download=True, transform=transform_test)
 
     train_loader = torch.utils.data.DataLoader(
         train_set,
@@ -278,11 +277,10 @@ def main(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Argument Parser for Model Configuration")
-
     parser.add_argument("--rotmnist", action="store_true", help="Training for rotmnist")
-
     args = parser.parse_args()
     return args
+
 
 if __name__ == "__main__":
     args = parse_args()

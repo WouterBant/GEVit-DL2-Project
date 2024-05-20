@@ -81,6 +81,8 @@ For reproducing the results for GE-ViT, change directory to the [src](src) folde
 
 For reproducing the results of the post hoc experiments, change directory to [src/post_hoc_equivariant](src/post_hoc_equivariance/) and follow the instructions from the [README](src/post_hoc_equivariance/README.md). Also, in this folder [checkpoints](src/post_hoc_equivariance/checkpoints) and [results](src/post_hoc_equivariance/results) are saved for various models.
 
+For reproducing the results of the modern equivariant ViT, change directory to [src/modern_eq_vit](src/modern_eq_vit/) and refer to the [README](src/modern_eq_vit/README.md) for instructions to run the training.
+
 ### Acknowledgements
 This repository contains the source code accompanying the paper: [Group Equivariant Vision Transformer](https://openreview.net/forum?id=uVG_7x41bN),  UAI 2023.
 
