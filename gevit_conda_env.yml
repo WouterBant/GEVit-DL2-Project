@@ -1,4 +1,4 @@
-name: g_selfatt
+name: gevit
 channels:
   - pytorch
   - conda-forge
