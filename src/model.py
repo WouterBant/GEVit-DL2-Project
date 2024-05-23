@@ -45,7 +45,7 @@ def get_model(config):
         }[group_name]
 
 
-        if config.hybrid:
+        if False: #config.hybrid:
             # the model where patches are encoded with g-CNN, and then E2 transformer is used with global attention
             # only use for pcam dataset
             gcnn = models.get_gcnn()
@@ -116,6 +116,7 @@ def get_model(config):
                 whitening_scale=config.whitening_scale,
             )
         elif config.dataset == "PCam":
+            print(group, in_channels, image_size, num_classes, patch_size, config.norm_type)
             model = models.GroupTransformer(
                 group=group,
                 in_channels=in_channels,

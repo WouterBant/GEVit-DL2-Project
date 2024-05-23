@@ -1,9 +1,19 @@
 ## Reproducing results for the modern equivariant ViT
 
-Just run:
+For the experiment with modern ViT using patches:
 
 ```bash
-python eq_modern_vit.py [--rotmnist]
+python eq_modern_vit.py --modern_vit
 ```
 
-- --rotmnist: pass this flag if you want to train on Rotation MNIST, otherwise you will train on Patch Camelyon
+For the experiment with the modern ViT using a cnn:
+
+```bash
+python eq_modern_vit.py --modern_vit_w_cnn
+```
+
+To run their model for 10 epochs:
+
+```bash
+python eq_modern_vit.py
+```

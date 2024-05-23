@@ -12,7 +12,7 @@ class PCam(ImageFolder):
     """
 
     def __init__(
-        self, root, train=True, transform=None, target_transform=None, download=False, valid=False, data_fraction=0.001
+        self, root, train=True, transform=None, target_transform=None, download=False, valid=False, data_fraction=1
     ):
         if train and valid:
             raise ValueError("PCam 'valid' split available only when train=False.")

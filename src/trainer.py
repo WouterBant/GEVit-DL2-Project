@@ -11,12 +11,13 @@ import tester
 from g_selfatt import utils
 from tqdm import tqdm
 
+torch.autograd.set_detect_anomaly(True)
 
 def train(model, dataloaders, config):
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = get_optimizer(model.parameters(), config)
     lr_scheduler, scheduler_step_at = get_scheduler(optimizer, dataloaders, config)
-
+    print(8)
     if config.scheduler == "constant":
         print(
             "No AMP will be used. Schedulers other than constant make models trained with AMP diverge. Current: {}".format(
@@ -71,7 +72,9 @@ def train(model, dataloaders, config):
             total = 0.0
 
             # Iterate over the dataloader
+            print("fakka")
             for inputs, labels in dataloaders[phase]:
+                print("yo")
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
@@ -81,6 +84,7 @@ def train(model, dataloaders, config):
                     if config.scheduler == "constant":
 
                         outputs = model(inputs)
+                        print("hallo")
                         loss = criterion(outputs, labels)
                         if train:
                             loss.backward()
@@ -93,6 +97,7 @@ def train(model, dataloaders, config):
                     else:
                         with autocast():  # Sets autocast in the main thread. It handles mixed precision in the forward pass.
                             outputs = model(inputs)
+                            print("hi")
                             loss = criterion(outputs, labels)
 
                         if phase == "train":

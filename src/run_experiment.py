@@ -56,11 +56,12 @@ def main(_):
     config["device"] = (
         "cuda:0" if (config.device == "cuda" and torch.cuda.is_available()) else "cpu"
     )
+    print(1)
     model = get_model(config)
-
+    print(2)
     # Define transforms and create dataloaders
     dataloaders = dataset.get_dataset(config, num_workers=4, data_fraction=config.data_fraction)
-
+    print(3)
     # Create model directory and instantiate config.path
     model_path(config)
 
@@ -70,9 +71,12 @@ def main(_):
 
     # Train the model
     if config.train:
+        print(4)
         # Print arguments (Sanity check)
         print(config)
+        print(5)
         print(datetime.datetime.now())
+        print(6)
         # Train the model
         trainer.train(model, dataloaders, config)
 
