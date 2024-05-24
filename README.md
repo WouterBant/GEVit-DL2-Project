@@ -27,6 +27,7 @@ For the full analysis see [our blogpost](Blogpost.md), but to give a little prev
 <table align="center">
   <tr align="center">
       <td><img src="figures/modern_eq_vit.png" width=600></td>
+      <td><img src="figures/hybrid.png" width=670></td>
   </tr>
 </table>
 
