@@ -55,7 +55,7 @@ cd GEVit-DL2-Project
 Unfortunately we had to use two different environments. For running the GE-ViT you can create the environment with:
 
 ```bash
-conda create -f gevit_conda_env.yml
+conda env create -f gevit_conda_env.yml 
 ```
 
 ```bash
@@ -65,7 +65,7 @@ conda activate gevit
 For running the post hoc experiments and training of the equivariant modern ViT:
 
 ```bash
-conda create -f posthoc_conda_env.yml
+conda env create -f posthoc_conda_env.yml
 ```
 
 ```bash

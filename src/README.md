@@ -1,5 +1,8 @@
 ### Reproducing experimental results for GE-ViT
 
+#### Visualisations from the blogpost
+The visualisations from the blogpost can be found in `demo/GEVIT_visualisations.ipynb`.
+
 #### Command for running rot-MNIST
 ```bash
 python run_experiment.py --config.dataset rotMNIST --config.model p4sa --config.norm_type LayerNorm --config.attention_type Local --config.activation_function Swish --config.patch_size 9 --config.dropout_att 0.1 --config.dropout_values 0.1 --config.whitening_scale 1.41421356 --config.epochs 300 --config.optimizer Adam --config.lr 0.001 --config.optimizer_momentum 0.9 --config.scheduler constants --config.sched_decay_steps='(1000,)' --config.sched_decay_factor 1.0 --config.weight_decay 0.0001 --config.batch_size 8 --config.device cuda --config.seed 0 --config.comment ''

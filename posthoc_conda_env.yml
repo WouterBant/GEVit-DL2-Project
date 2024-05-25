@@ -17,4 +17,4 @@ dependencies:
   - timm
   - numpy
   - yaml
-  - ml_collections
+  - ml-collections
