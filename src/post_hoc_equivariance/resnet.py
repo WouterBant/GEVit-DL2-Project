@@ -1,15 +1,18 @@
-import torch
-import torchvision.transforms as tvtf
 import sys
 sys.path.append('..')
 from datasets import PCam
-import timm
-import torch.nn as nn
-from tqdm import tqdm
 from post_hoc_equivariant import *
+
+import torch
+import torch.nn as nn
+import torchvision.transforms as tvtf
+
 import csv
 import copy
+import timm
 import random
+from tqdm import tqdm
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

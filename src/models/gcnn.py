@@ -905,7 +905,7 @@ class GroupEquivariantCNN(torch.nn.Module):
         # this cell.
         
         ## YOUR CODE STARTS HERE ##
-        self.projection_layer = torch.nn.AdaptiveAvgPool3d((1,20,20))
+        # self.projection_layer = torch.nn.AdaptiveAvgPool3d((1,20,20))
         ## AND ENDS HERE ##
 
         # And a final linear layer for classification.
@@ -925,7 +925,8 @@ class GroupEquivariantCNN(torch.nn.Module):
             x = torch.nn.functional.relu(x)
         
         # to ensure equivariance, apply max pooling over group and spatial dims.
-        x = self.projection_layer(x).squeeze(2)
+        # x = self.projection_layer(x).squeeze(2)
+        x = x.mean(dim=-3)
 
         #x = self.final_linear(x)
         return x
@@ -938,15 +939,16 @@ h_params = {"in_channels": 1,
             "hidden_channels":16, # to account for the increase in trainable parameters due to the extra dimension in our feature maps, remove some hidden channels.
             "group":CyclicGroup(order=4)}
 
-def get_gcnn(order=4):
-    model = GroupEquivariantCNN(in_channels = 3,
-                                out_channels = 16,
-                                kernel_size = 5,
-                                num_hidden = 4,
-                                hidden_channels = 16,
-                                group = E2Group(order=order))
+def get_gcnn(order=4,
+            in_channels=3,
+            out_channels=16,
+            kernel_size=5,
+            num_hidden=17,
+            hidden_channels=16):
+    model = GroupEquivariantCNN(in_channels=in_channels,
+                                out_channels=out_channels,
+                                kernel_size=kernel_size,
+                                num_hidden=num_hidden,
+                                hidden_channels=hidden_channels,
+                                group=E2Group(order=order))
     return model
-
-
-
-

@@ -1,3 +1,10 @@
+import sys
+sys.path.append('..')
+from datasets import MNIST_rot, PCam
+from train_vit import VisionTransformer
+from post_hoc_equivariant import *
+from sub_models import ScoringModel, Transformer
+
 import torch
 import torch.nn as nn
 import torchvision.transforms as tvtf
@@ -5,15 +12,9 @@ import torchvision.transforms as tvtf
 import os 
 import csv
 import copy
+import random
 import argparse
 from tqdm import tqdm
-import random
-import sys
-sys.path.append('..')
-from datasets import MNIST_rot, PCam
-from train_vit import VisionTransformer
-from post_hoc_equivariant import *
-from sub_models import ScoringModel, Transformer
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -166,7 +167,6 @@ def run_experiments(args):
             tvtf.Normalize(data_mean, data_stddev),
         ]
     )
-    # TODO
 
     if not args.pcam:
         train_set = MNIST_rot(root="../data", stage="train", download=True, transform=transform_train, data_fraction=0.1 if args.less_data else 1, only_3_and_8=args.only_3_and_8)

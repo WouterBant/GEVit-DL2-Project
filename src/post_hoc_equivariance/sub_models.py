@@ -54,7 +54,7 @@ class Transformer(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.cls_token = nn.Parameter(torch.randn(1, 1, embed_dim))
 
-    def forward(self, x, vis=False):
+    def forward(self, x):
         B, T, n_emb = x.shape
 
         # we use a cls token for prediction
@@ -62,27 +62,6 @@ class Transformer(nn.Module):
         x = torch.cat([cls_token, x], dim=1)
 
         x = x.transpose(0, 1)
-        if vis: 
-            inp_x = self.transformer[0].layer_norm_1(x)
-            x_attn1 = self.transformer[0].attn1(inp_x, inp_x, inp_x)
-            x = x + x_attn1[0]
-            x = self.transformer[0].layer_norm_2(x)
-            x = self.transformer[0].act(x) 
-            x_attn2 = self.transformer[0].attn2(x, x, x)
-            x = x + x_attn2[0]
-
-            inp_x = self.transformer[1].layer_norm_1(x)
-            x_attn3 = self.transformer[1].attn1(inp_x, inp_x, inp_x)
-            x = x + x_attn3[0]
-            x = self.transformer[1].layer_norm_2(x)
-            x = self.transformer[1].act(x) 
-            x_attn4 = self.transformer[1].attn2(x, x, x)
-
-            out = [x_attn1[1], x_attn2[1], x_attn3[1], x_attn4[1]]
-
-            return out
-    
-
         x = self.transformer(x)
 
         # return the cls vector

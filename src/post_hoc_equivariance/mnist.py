@@ -6,12 +6,15 @@ from datasets import MNIST_rot, PCam
 import torch
 import torch.nn as nn
 from torchvision import transforms
-from torch.optim.lr_scheduler import StepLR,LambdaLR
+from torchvision.datasets import MNIST
+from torch.optim.lr_scheduler import StepLR, LambdaLR
 
+import os
 import copy
-import random
 import math
-import argparse
+import wandb
+import random
+from collections import Counter
 
 
 def linear_warmup_cosine_lr_scheduler(
@@ -40,6 +43,7 @@ def linear_warmup_cosine_lr_scheduler(
 
     return LambdaLR(optimizer, lr_lambda=lr_lambda)
 
+
 # https://lightning.ai/docs/pytorch/stable/notebooks/course_UvA-DL/11-vision-transformer.html
 def img_to_patch(x, patch_size, flatten_channels=True):
     """
@@ -56,6 +60,7 @@ def img_to_patch(x, patch_size, flatten_channels=True):
     if flatten_channels:
         x = x.flatten(2, 4)  # [B, H'*W', C*p_H*p_W]
     return x
+
 
 class AttentionBlock(nn.Module):
     def __init__(self, embed_dim, hidden_dim, num_heads, dropout=0.0):
@@ -86,6 +91,7 @@ class AttentionBlock(nn.Module):
         x = x + self.attn(inp_x, inp_x, inp_x)[0]
         x = x + self.linear(self.layer_norm_2(x))
         return x
+
 
 class VisionTransformer(nn.Module):
     def __init__(
@@ -163,19 +169,30 @@ class CustomRotation(object):
         angle = random.choice(self.angles)
         return transforms.functional.rotate(img, angle)
 
-def main(args):
 
-    if args.rotmnist:
+dataset = "mnist" # "rotmnist" "pcam"
+
+def main():
+
+    # os.environ["WANDB_API_KEY"] = ""  # TODO insert your wandb key here
+    
+    # wandb.init(
+    #     project="pretraining-mnist-our-vit",
+    #     group="pcam",
+    #     entity="ge_vit_DL2",
+    # )
+
+    if dataset == "rotmnist" or dataset == "mnist":
         data_mean = (0.1307,)
         data_stddev = (0.3081,)
-        transform_train = transforms.Compose([
-            transforms.RandomRotation(degrees=(-180, 180)),  # Random rotation
-            transforms.ToTensor(),
-            transforms.Normalize(data_mean, data_stddev)
-        ])
-    else:
+    elif dataset == "pcam":
         data_mean = (0.701, 0.538, 0.692)
         data_stddev = (0.235, 0.277, 0.213)
+    else:
+        raise ValueError("Invalid dataset") 
+    
+    if dataset == "pcam":
+        # random 90 degree rotation and flips
         transform_train = transforms.Compose([
             CustomRotation([0, 90, 180, 270]),
             transforms.RandomHorizontalFlip(),  # Random horizontal flip with a probability of 0.5
@@ -183,7 +200,20 @@ def main(args):
             transforms.ToTensor(),
             transforms.Normalize(data_mean, data_stddev)
         ])
-    
+    elif dataset == "rotmnist":
+        # random rotation
+        transform_train = transforms.Compose([
+            transforms.RandomRotation(degrees=(-180, 180)),  # Random rotation
+            transforms.ToTensor(),
+            transforms.Normalize(data_mean, data_stddev)
+        ])
+    elif dataset == "mnist":
+        # no data augmentation
+        transform_train = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(data_mean, data_stddev)
+        ])
+
     transform_test = transforms.Compose(
         [
             transforms.ToTensor(),
@@ -191,14 +221,29 @@ def main(args):
         ]
     )
 
-    if args.rotmnist:
-        train_set = MNIST_rot(root="../data", stage="train", download=True, transform=transform_train, data_fraction=0.1, only_3_and_8=False)
+    if dataset == "rotmnist":
+        train_set = MNIST_rot(root="../data", stage="train", download=True, transform=transform_train, data_fraction=1, only_3_and_8=False)
         validation_set = MNIST_rot(root="../data", stage="validation", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
         test_set = MNIST_rot(root="../data", stage="test", download=True, transform=transform_test, data_fraction=1, only_3_and_8=False)
-    else:
+    elif dataset == "pcam":
         train_set = PCam(root="../data", train=True, download=True, transform=transform_train)
         validation_set = PCam(root="../data", train=False, valid=True, download=True, transform=transform_test)
         test_set = PCam(root="../data", train=False, download=True, transform=transform_test)
+    elif dataset == "mnist":
+        train_set = MNIST(root="../data/mnistreal", train=True, download=True, transform=transform_train)
+        test_set = MNIST(root="../data/mnistreal", train=False, download=True, transform=transform_test)
+        # Define the size of the validation set
+        validation_size = int(0.2 * len(test_set))  # Adjust as needed
+
+        # Define indices for the validation set and the remaining for testing
+        torch.manual_seed(42)
+        indices = torch.randperm(len(test_set)).tolist()
+        validation_indices = indices[:validation_size]
+        test_indices = indices[validation_size:]
+
+        # Create subsets for validation and testing
+        validation_set = torch.utils.data.Subset(test_set, validation_indices)
+        test_set = torch.utils.data.Subset(test_set, test_indices)
 
     train_loader = torch.utils.data.DataLoader(
         train_set,
@@ -220,7 +265,7 @@ def main(args):
     )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if args.rotmnist:
+    if dataset == "rotmnist" or dataset == "mnist":
         model = VisionTransformer(embed_dim=64,
                                 hidden_dim=512,
                                 num_heads=4,
@@ -230,7 +275,7 @@ def main(args):
                                 num_patches=49,
                                 num_classes=10,
                                 dropout=0.1).to(device)
-    else:
+    elif dataset == "pcam":
         model = VisionTransformer(embed_dim=64,
                             hidden_dim=512,
                             num_heads=4,
@@ -244,20 +289,26 @@ def main(args):
     print(f"Number of parameters in the model: {num_params(model)}")
     criterion = torch.nn.CrossEntropyLoss()
 
-    if args.rotmnist:
-        optimizer = torch.optim.Adam(model.parameters(), 0.001)
-    else:
+    if dataset == "pcam":
+        lr = 0.01
+        # wandb.log({"lr":lr})
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0001)
+        # scheduler = StepLR(optimizer, step_size=3, gamma=0.5)  # only used on pcam
         max_steps = 50
         max_steps *= len(train_loader.dataset) // 1024
         lr_scheduler = linear_warmup_cosine_lr_scheduler(
                 optimizer, 10.0 / 50, T_max=50  # Perform linear warmup for 10 epochs.
             )
+    elif dataset == "rotmnist" or dataset == "mnist":
+        lr = 0.001
+        # wandb.log({"lr":lr})
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+        lr_scheduler = None
 
     best_model = copy.deepcopy(model.state_dict())
     best_val_acc = 0
 
-    n_epochs = 500 if args.rotmnist else 50  # pcam large
+    n_epochs = 500 if (dataset == "rotmnist" or dataset == "mnist") else 50
     for epoch in range(n_epochs):
         model.train()
         losses = []
@@ -270,7 +321,10 @@ def main(args):
             loss.backward()
             optimizer.step()  # Update weights
             losses.append(loss.item())
-            if not args.rotmnist: lr_scheduler.step()
+            if lr_scheduler != None:
+                lr_scheduler.step()
+
+        # wandb.log({"loss_train":sum(losses)/len(losses)}, step=epoch+1)
 
         # Validate on the validation set
         model.eval()  # Set the model to evaluation mode
@@ -288,6 +342,10 @@ def main(args):
         if accuracy > best_val_acc:
             best_model = copy.deepcopy(model.state_dict())
             best_val_acc = accuracy
+        # wandb.log({"validation_accuracy":accuracy}, step=epoch+1)
+        # scheduler.step()
+
+    # wandb.run.summary["best_validation_accuracy"] = best_val_acc
 
     model.load_state_dict(best_model)
     
@@ -304,23 +362,12 @@ def main(args):
             correct += (predicted == labels).sum().item()
     test_acc = 100 * correct / total
     
-    print(test_acc)
+    # wandb.run.summary["test_acc"] = test_acc
 
     # save model and log it
-    if args.rotmnist:
-        torch.save(model.state_dict(), "saved/model_rotmnist.pt")
-    else:
-        torch.save(model.state_dict(), "saved/model_pcam.pt")
+    torch.save(model.state_dict(), f"saved/{dataset}_{random.randint(0, 10000)}.pt")
+    # torch.save(model.state_dict(), os.path.join(wandb.run.dir, f"{dataset}_{random.randint(0,10000)}.pt"))
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Argument Parser for Model Configuration")
-
-    parser.add_argument("--rotmnist", action="store_true", help="Training for rotmnist")
-    parser.add_argument("--only_3_and_8", action="store_true", help="Only use classes 3 and 8")
-
-    args = parser.parse_args()
-    return args
 
 if __name__ == "__main__":
-    args = parse_args()
-    main(args)
+    main()
