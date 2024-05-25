@@ -1,8 +1,7 @@
 import torch
-import wandb
 
-import g_selfatt.groups as groups
 import models
+import g_selfatt.groups as groups
 from g_selfatt.utils import num_params
 
 
@@ -44,34 +43,8 @@ def get_model(config):
             "p8m": groups.E2(num_elements=16),
         }[group_name]
 
-
-        if config.hybrid:
-            # the model where patches are encoded with g-CNN, and then E2 transformer is used with global attention
-            # only use for pcam dataset
-            gcnn = models.get_gcnn()
-            group_transformer = models.GroupTransformer(
-                    group=group,
-                    in_channels=gcnn.out_channels,
-                    num_channels=12,
-                    block_sizes=[2, 3],
-                    expansion_per_block=1,
-                    crop_per_layer=0,
-                    image_size=gcnn.output_dimensionality,
-                    num_classes=num_classes,
-                    dropout_rate_after_maxpooling=0.0,
-                    maxpool_after_last_block=True,
-                    normalize_between_layers=True,
-                    patch_size=patch_size, ##TODO don't hardcode this maybe
-                    num_heads=9,
-                    norm_type=config.norm_type,
-                    activation_function=config.activation_function,
-                    attention_dropout_rate=config.dropout_att,
-                    value_dropout_rate=config.dropout_values,
-                    whitening_scale=config.whitening_scale,
-                )
-            model = models.Hybrid(gcnn, group_transformer)
         # Create model
-        elif config.dataset == "rotMNIST":
+        if config.dataset == "rotMNIST":
             num_classes = 2 if config.only_3_and_8 else 10
             model = models.GroupTransformer(
                 group=group,
