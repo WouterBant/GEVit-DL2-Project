@@ -2,7 +2,7 @@
 
 ### Wouter Bant, Colin Bot, Jasper Eppink, Clio Feng, Floris Six Dijkstra
 
-Inspired by the equivariant attention model present in [Group Equivariant Vision Transformer](https://openreview.net/forum?id=uVG_7x41bN),  UAI 2023, we conduct experiments to validate the performance of the presented model. Furthermore, we present and evaluate several ways of making non-equivariant models equivariant by test time augmentations. Building on the GE-ViT, we make the modern ViT equivariant. Also, we provide many visualizations for a better understanding of GE-ViTs and other presented methods.
+Inspired by the equivariant attention model present in [Group Equivariant Vision Transformer](https://openreview.net/forum?id=uVG_7x41bN),  UAI 2023, we conduct experiments to validate the performance of the presented model. We provide many visualizations for a better understanding of GE-ViTs and other presented methods. Furthermore, we present and evaluate several ways of making non-equivariant models equivariant by combining the latent embeddings or probabilities of different transformed inputs. We also speed up the experiments with GE-ViT by first projecting the image to an artificial image with smaller spatial resolution. 
 
 For the full analysis see [our blogpost](Blogpost.md), but to give a little preview:
 
