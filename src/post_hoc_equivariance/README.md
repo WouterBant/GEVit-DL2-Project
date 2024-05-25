@@ -26,7 +26,7 @@ python mnist.py
 ### Experiments for pretrained resnet
 To run the experiments for the pretrained resnet, simply run (note that you need to install the patch Camelyon dataset yourself):
 ```bash
-resnet.py [--finetune]
+python resnet.py [--finetune]
 ```
 
 - --finetune: will finetune the last layer (experiments showed that finetuning the entire model is not beneficial)
@@ -53,10 +53,6 @@ python post_hoc_experiments.py --model_path path_to_model [--n_rotations] [--fli
 - less_data_rotmnist: Here we train on 10% of the training set of rotation mnist and evaluate on the entire test set
 ```bash
 python post_hoc_experiments.py --model_path checkpoints/less_data_rotmnist/normal_vit.pt --n_rotations 16 --less_data [--finetune_model] [--finetune_mlp_head] 
-```
-- pcam_resnet: Here we used a pretrained resnet trained on the full training set of patch Camelyon. Here we only present results for finetuning the last layer as finetuning the entire model was not beneficial. Note that you need to download the data yourself. 
-```bash
-python post_hoc_experiments.py --model_path checkpoints/ --n_rotations 4 --flips --pcam [--finetune_model] [--finetune_mlp_head]
 ```
 - rotmnist: Here we use store the results we got for a model trained on the entire training set of rotation MNIST
 ```bash

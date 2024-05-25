@@ -174,13 +174,13 @@ dataset = "mnist" # "rotmnist" "pcam"
 
 def main():
 
-    os.environ["WANDB_API_KEY"] = ""  # TODO insert your wandb key here
+    # os.environ["WANDB_API_KEY"] = ""  # TODO insert your wandb key here
     
-    wandb.init(
-        project="pretraining-mnist-our-vit",
-        group="pcam",
-        entity="ge_vit_DL2",
-    )
+    # wandb.init(
+    #     project="pretraining-mnist-our-vit",
+    #     group="pcam",
+    #     entity="ge_vit_DL2",
+    # )
 
     if dataset == "rotmnist" or dataset == "mnist":
         data_mean = (0.1307,)
@@ -291,7 +291,7 @@ def main():
 
     if dataset == "pcam":
         lr = 0.01
-        wandb.log({"lr":lr})
+        # wandb.log({"lr":lr})
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0001)
         # scheduler = StepLR(optimizer, step_size=3, gamma=0.5)  # only used on pcam
         max_steps = 50
@@ -301,7 +301,7 @@ def main():
             )
     elif dataset == "rotmnist" or dataset == "mnist":
         lr = 0.001
-        wandb.log({"lr":lr})
+        # wandb.log({"lr":lr})
         optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
         lr_scheduler = None
 
@@ -324,7 +324,7 @@ def main():
             if lr_scheduler != None:
                 lr_scheduler.step()
 
-        wandb.log({"loss_train":sum(losses)/len(losses)}, step=epoch+1)
+        # wandb.log({"loss_train":sum(losses)/len(losses)}, step=epoch+1)
 
         # Validate on the validation set
         model.eval()  # Set the model to evaluation mode
@@ -342,10 +342,10 @@ def main():
         if accuracy > best_val_acc:
             best_model = copy.deepcopy(model.state_dict())
             best_val_acc = accuracy
-        wandb.log({"validation_accuracy":accuracy}, step=epoch+1)
+        # wandb.log({"validation_accuracy":accuracy}, step=epoch+1)
         # scheduler.step()
 
-    wandb.run.summary["best_validation_accuracy"] = best_val_acc
+    # wandb.run.summary["best_validation_accuracy"] = best_val_acc
 
     model.load_state_dict(best_model)
     
@@ -362,11 +362,11 @@ def main():
             correct += (predicted == labels).sum().item()
     test_acc = 100 * correct / total
     
-    wandb.run.summary["test_acc"] = test_acc
+    # wandb.run.summary["test_acc"] = test_acc
 
     # save model and log it
     torch.save(model.state_dict(), f"saved/{dataset}_{random.randint(0, 10000)}.pt")
-    torch.save(model.state_dict(), os.path.join(wandb.run.dir, f"{dataset}_{random.randint(0,10000)}.pt"))
+    # torch.save(model.state_dict(), os.path.join(wandb.run.dir, f"{dataset}_{random.randint(0,10000)}.pt"))
 
 
 if __name__ == "__main__":
