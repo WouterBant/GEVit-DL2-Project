@@ -15,6 +15,7 @@ class Hybrid(nn.Module):
     @autocast() # required for mixed-precision when training on multiple GPUs.
     def forward(self, x):
         out = self.gcnn(x)  # B, C, H, W
+        print(out.shape)
         out = self.group_transformer(out)
         # print("out: ", out.shape)
         return out

@@ -1,7 +1,6 @@
 import sys
 sys.path.append("..")
 import models
-# from models.gccn import get_gcnn
 from g_selfatt import utils
 import g_selfatt.groups as groups
 from datasets import MNIST_rot, PCam
@@ -109,14 +108,14 @@ class EquivariantViT(nn.Module):
             image_size=self.num_patches_x,
             num_classes=num_classes,
             dropout_rate_after_maxpooling=0.0,
-            maxpool_after_last_block=True,
+            maxpool_after_last_block=False,
             normalize_between_layers=True,
             patch_size=att_patch_size,
             num_heads=9,
             norm_type="LayerNorm",
             activation_function="Swish",
             attention_dropout_rate=0.1,
-            value_dropout_rate=0.01,
+            value_dropout_rate=0.1,
             whitening_scale=1.41421356,
         ).to(device)
         self.layernorm = torch.nn.LayerNorm(n_embd)
@@ -134,10 +133,12 @@ class EquivariantViT(nn.Module):
 
         # flatten and project all patches
         x = x.view(B*num_patches*T, C*patch_size*patch_size)
+
         x = self.project(x)
 
         # combine the transformations for the patches to make it invariant
         x = x.view(B, num_patches, T, self.n_embd)
+
         x = x.mean(dim=2)
         
         x = self.layernorm(x)
@@ -174,7 +175,7 @@ def main(args):
     validation_set = PCam(root="../data", train=False, valid=True, download=True, transform=transform_test, data_fraction=0.1)
     test_set = PCam(root="../data", train=False, download=True, transform=transform_test)
 
-    batch_size = 64 if (args.modern_vit or args.modern_vit_w_cnn) else 16
+    batch_size = 64 if (args.modern_vit) else 16
     train_loader = torch.utils.data.DataLoader(
         train_set,
         batch_size=batch_size,
@@ -202,9 +203,12 @@ def main(args):
     )
 
     if args.modern_vit:
+        patch_size = args.patch_size
+        num_patches = (96 // patch_size)**2
+        wandb.log({"patch_size": patch_size})
         model = EquivariantViT(
-                patch_size=16, 
-                num_patches=36,
+                patch_size=patch_size, 
+                num_patches=num_patches,
                 num_classes=2, 
                 num_channels=3, 
                 n_rotations=4, 
@@ -212,20 +216,25 @@ def main(args):
                 n_embd=128, 
                 att_patch_size=3).to(device)
     elif args.modern_vit_w_cnn:
-        gcnn = models.get_gcnn()
+        gcnn = models.get_gcnn(order=4,
+            in_channels=3,
+            out_channels=32,
+            kernel_size=5,
+            num_hidden=17,
+            hidden_channels=32)
         group_transformer = models.GroupTransformer(
                 group=groups.SE2(num_elements=4),
                 in_channels=gcnn.out_channels,
-                num_channels=12,
+                num_channels=20,
                 block_sizes=[2, 3],
                 expansion_per_block=1,
-                crop_per_layer=0,
+                crop_per_layer=[2, 0, 2, 1, 1],
                 image_size=gcnn.output_dimensionality,
                 num_classes=2,
                 dropout_rate_after_maxpooling=0.0,
                 maxpool_after_last_block=True,
                 normalize_between_layers=True,
-                patch_size=3,
+                patch_size=5,
                 num_heads=9,
                 norm_type="LayerNorm",
                 activation_function="Swish",
@@ -256,8 +265,8 @@ def main(args):
             whitening_scale=1.41421356,
         ).to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), 0.0001)
-    max_steps = epochs = 150
+    optimizer = torch.optim.Adam(model.parameters(), 0.001)  # 0.001 works well here for floris model
+    max_steps = epochs = 50
     max_steps *= len(train_loader.dataset) // batch_size
     lr_scheduler = utils.schedulers.linear_warmup_cosine_lr_scheduler(
         optimizer, 10.0 / epochs, T_max=max_steps  # Perform linear warmup for 10 epochs.
@@ -267,18 +276,23 @@ def main(args):
     best_model = copy.deepcopy(model.state_dict())
     best_val_acc = 0
 
+    # epsilon = torch.tensor(0.1)
+    # smoothing = [epsilon, torch.tensor(1.0) - epsilon]
+
     for epoch in tqdm(range(epochs)):
         
         model.train()
         losses = []
         for inputs, labels in tqdm(train_loader):
             inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
+            # smoothed_labels = labels * smoothing[1] + (1 - labels) * smoothing[0]
+
             optimizer.zero_grad()
             with torch.set_grad_enabled(True):
                 with autocast():  # Sets autocast in the main thread. It handles mixed precision in the forward pass.
                     outputs = model(inputs)
-                    print(model.gcnn)
-                    print(outputs.shape)
+                    # print(model.gcnn)
+                    # print(outputs.shape)
                     print(outputs[0:5,:])
                     loss = criterion(outputs, labels)
 
@@ -299,24 +313,57 @@ def main(args):
         wandb.log({"loss_train":sum(losses)/len(losses)}, step=epoch+1)
 
         # Validate on the validation set
-        if epoch % 1 == 0:
-            model.eval()  # Set the model to evaluation mode
-            correct = 0
-            total = 0
-            with torch.no_grad():  # Disable gradient calculation during inference
-                for inputs, labels in val_loader:
-                    inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
-                    outputs = model(inputs)
-                    _, predicted = torch.max(outputs.data, 1)
-                    total += labels.size(0)
-                    correct += (predicted == labels).sum().item()
+        # Initialize counters for TP, TN, FP, FN
+        positive = negative = total = correct = TP = TN = FP = FN = 0
 
-            accuracy = 100 * correct / total
-            if accuracy > best_val_acc:
-                best_model = copy.deepcopy(model.state_dict())
-                best_val_acc = accuracy
-            
-            wandb.log({"validation_accuracy":accuracy}, step=epoch+1)
+        with torch.no_grad():  # Disable gradient calculation during inference
+            for inputs, labels in val_loader:
+                inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
+                outputs = model(inputs)
+                _, predicted = torch.max(outputs.data, 1)
+
+                # Update total and correct counters
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+                negative += (labels == 0).sum().item()
+                positive += (labels == 1).sum().item()
+
+                # Update TP, TN, FP, FN counters
+                TP += ((predicted == 1) & (labels == 1)).sum().item()
+                TN += ((predicted == 0) & (labels == 0)).sum().item()
+                FP += ((predicted == 1) & (labels == 0)).sum().item()
+                FN += ((predicted == 0) & (labels == 1)).sum().item()
+
+        # Calculate accuracy
+        accuracy = 100 * correct / total
+        if accuracy > best_val_acc:
+            best_model = copy.deepcopy(model.state_dict())
+            best_val_acc = accuracy
+
+        TP_percentage = 100 * TP / positive
+        TN_percentage = 100 * TN / negative
+        FP_percentage = 100 * FP / positive
+        FN_percentage = 100 * FN / negative
+
+        # Calculate precision and recall
+        precision = 100 * TP / (TP + FP) if (TP + FP) > 0 else 0
+        recall = 100 * TP / (TP + FN) if (TP + FN) > 0 else 0
+
+        # Log the metrics to wandb
+        wandb.log({
+            "validation_accuracy": accuracy,
+            "TP_percentage": TP_percentage,
+            "TN_percentage": TN_percentage,
+            "FP_percentage": FP_percentage,
+            "FN_percentage": FN_percentage,
+            "precision": precision,
+            "recall": recall
+        }, step=epoch + 1)
+
+        # Log the accuracy to wandb
+        wandb.log({"validation_accuracy": accuracy}, step=epoch + 1)
+
+        # Optionally log TP, TN, FP, FN to wandb
 
     wandb.run.summary["best_validation_accuracy"] = best_val_acc
 
@@ -345,6 +392,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Argument Parser for Model Configuration")
     parser.add_argument("--modern_vit", action="store_true", help="Training for modern vit")
     parser.add_argument("--modern_vit_w_cnn", action="store_true", help="Training for modern vit with cnn")
+    parser.add_argument("--patch_size", default=6, type=int, help="Patch size")
 
     args = parser.parse_args()
     return args
