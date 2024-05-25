@@ -1,10 +1,10 @@
+from collections import Counter
 from typing import Dict
 
 import ml_collections
+import numpy as np
 import torch
 import torchvision
-from collections import Counter
-import numpy as np
 
 from datasets import MNIST_rot, PCam
 

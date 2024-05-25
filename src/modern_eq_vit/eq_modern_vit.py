@@ -1,91 +1,27 @@
 import sys
+
 sys.path.append("..")
-import models
-from g_selfatt import utils
-import g_selfatt.groups as groups
-from datasets import MNIST_rot, PCam
+sys.path.append("../post_hoc_equivariance")
+import argparse
+import copy
+import math
+import os
 
 import torch
 import torch.nn as nn
 import torchvision.transforms as tvtf
 import torchvision.transforms.functional as TF
-from torch.optim.lr_scheduler import StepLR,LambdaLR
-
-import os
-import copy
-import math
 import wandb
-import random
-import argparse
-from tqdm import tqdm
 from torch.cuda.amp import GradScaler, autocast
+from tqdm import tqdm
+from utils import CustomRotation, get_transforms, img_to_patch, set_seed
+
+import g_selfatt.groups as groups
+import models
+from datasets import MNIST_rot, PCam
+from g_selfatt import utils
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-class CustomRotation(object):
-    def __init__(self, angles):
-        self.angles = angles
-
-    def __call__(self, img):
-        angle = random.choice(self.angles)
-        return tvtf.functional.rotate(img, angle)
-
-
-def get_transforms(images, n_rotations=4, flips=True):
-    """ Returns all transformations of the input images """
-
-    B, C, H, W = images.shape
-    T = 2*n_rotations if flips else n_rotations  # number of transformations
-
-    # initialize empty transforms tensor
-    transforms = torch.empty(size=(B, T, C, H, W)) #.to(device)
-    transforms[:, 0,...] = images
-    idx = 1
-
-    # remember all orientations that need to be flipped
-    orientations = [images] if flips else []
-
-    # rotations
-    for i in range(1, n_rotations):
-        angle = i * (360 / n_rotations)
-        rotated_images = TF.rotate(images, angle)  # B, C, H, W
-        transforms[:, idx,...] = rotated_images
-        idx += 1
-
-        if flips:
-            orientations.append(rotated_images)
-
-    # flips
-    for transform in orientations:
-        flipped_image = TF.hflip(transform)
-        transforms[:, idx, ...] = flipped_image
-        idx += 1
-
-    return transforms.to(device)  # B, T, C, H, W
-
-
-def img_to_patch(x, patch_size, flatten_channels=True):
-    """
-    Args:
-        x: Tensor representing the image of shape [B, C, H, W]
-        patch_size: Number of pixels per dimension of the patches (integer)
-        flatten_channels: If True, the patches will be returned in a flattened format
-                           as a feature vector instead of a image grid.
-    """
-    B, C, H, W = x.shape
-    x = x.reshape(B, C, H // patch_size, patch_size, W // patch_size, patch_size)
-    x = x.permute(0, 2, 4, 1, 3, 5)  # [B, H', W', C, p_H, p_W]
-    x = x.flatten(1, 2)  # [B, H'*W', C, p_H, p_W]
-    if flatten_channels:
-        x = x.flatten(2, 4)  # [B, H'*W', C*p_H*p_W]
-    return x
-
-def set_seed(seed):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)  # if using CUDA
-    torch.backends.cudnn.deterministic = True  # if using CUDA
-    torch.backends.cudnn.benchmark = False  # if using CUDA, may improve performance but can lead to non-reproducible results
 
 class EquivariantViT(nn.Module):
     def __init__(self, patch_size=7, num_patches=16, num_channels=1, n_rotations=4, flips=False, n_embd=64, att_patch_size=None, num_classes=10):

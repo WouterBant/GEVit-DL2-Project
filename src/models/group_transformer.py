@@ -6,16 +6,7 @@ import torch
 import torch.nn as nn
 
 from g_selfatt.groups import Group
-from g_selfatt.nn import (
-    Conv3d1x1,
-    GroupLocalSelfAttention,
-    GroupSelfAttention,
-    LayerNorm,
-    LiftLocalSelfAttention,
-    LiftSelfAttention,
-    TransformerBlock,
-    activations,
-)
+from g_selfatt.nn import Conv3d1x1, GroupLocalSelfAttention, GroupSelfAttention, LayerNorm, LiftLocalSelfAttention, LiftSelfAttention, TransformerBlock, activations
 
 # mixed precision
 try:

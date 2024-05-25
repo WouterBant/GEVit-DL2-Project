@@ -1,6 +1,8 @@
 import pathlib
-from torchvision.datasets import ImageFolder
 import random
+
+from torchvision.datasets import ImageFolder
+
 
 class PCam(ImageFolder):
     """
