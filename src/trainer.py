@@ -6,10 +6,10 @@ import torch
 import wandb
 from torch.cuda.amp import GradScaler, autocast
 from torch.optim.lr_scheduler import LambdaLR
+from tqdm import tqdm
 
 import tester
 from g_selfatt import utils
-from tqdm import tqdm
 
 
 def train(model, dataloaders, config):

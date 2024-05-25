@@ -1,11 +1,13 @@
-import torch
-from g_selfatt.utils import num_params
-from torchvision import transforms
-from datasets import MNIST_rot
-import torch.nn as nn
 import copy
 import os
+
+import torch
+import torch.nn as nn
 import wandb
+from torchvision import transforms
+
+from datasets import MNIST_rot
+from g_selfatt.utils import num_params
 
 
 # https://lightning.ai/docs/pytorch/stable/notebooks/course_UvA-DL/11-vision-transformer.html
@@ -122,7 +124,6 @@ class VisionTransformer(nn.Module):
 
         out = self.mlp_head(cls)
         return out
-
 
 
 def main():

@@ -1,37 +1,22 @@
 import sys
+
 sys.path.append('..')
-from datasets import MNIST_rot, PCam
-from train_vit import VisionTransformer
-from post_hoc_equivariant import *
-from sub_models import ScoringModel, Transformer
+import argparse
+import copy
+import csv
+import os
 
 import torch
 import torch.nn as nn
 import torchvision.transforms as tvtf
-
-import os 
-import csv
-import copy
-import random
-import argparse
+from post_hoc_equivariant import *
+from sub_models import ScoringModel, Transformer
 from tqdm import tqdm
+from utils import CustomRotation, evaluate, set_seed, test
 
+from datasets import MNIST_rot, PCam
+from train_vit import VisionTransformer
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-class CustomRotation(object):
-    def __init__(self, angles):
-        self.angles = angles
-
-    def __call__(self, img):
-        angle = random.choice(self.angles)
-        return tvtf.functional.rotate(img, angle)
-
-def set_seed(seed):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)  # if using CUDA
-    torch.backends.cudnn.deterministic = True  # if using CUDA
-    torch.backends.cudnn.benchmark = False  # if using CUDA, may improve performance but can lead to non-reproducible results
 
 def get_non_equivariant_vit(model_path, device):
     if not args.pcam:
@@ -75,7 +60,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def train(model, n_epochs, train_loader, val_loader):
+def train(model, n_epochs, train_loader, val_loader, device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)
     criterion = nn.CrossEntropyLoss()
@@ -112,32 +97,6 @@ def train(model, n_epochs, train_loader, val_loader):
 
     return model.to(device)
 
-def evaluate(model, val_loader):
-    model.eval()
-    correct = total = 0
-    with torch.no_grad():  # disable gradient calculation during inference
-        for inputs, labels in tqdm(val_loader):
-            inputs, labels = inputs.to(device), labels.to(device)  # move inputs and labels to device
-            outputs = model(inputs)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-    val_acc = 100 * correct / total
-    return val_acc
-
-def test(model, test_loader):
-    model.eval()
-    correct = total = 0
-    with torch.no_grad():  # disable gradient calculation during inference
-        for inputs, labels in tqdm(test_loader):
-            inputs, labels = inputs.to(device), labels.to(device)  # move inputs and labels to device
-            outputs = model(inputs)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-    test_acc = 100 * correct / total
-    return test_acc
-
 def run_experiments(args):
     if not args.pcam:
         data_mean = (0.1307,)
@@ -167,6 +126,8 @@ def run_experiments(args):
             tvtf.Normalize(data_mean, data_stddev),
         ]
     )
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     if not args.pcam:
         train_set = MNIST_rot(root="../data", stage="train", download=True, transform=transform_train, data_fraction=0.1 if args.less_data else 1, only_3_and_8=args.only_3_and_8)
@@ -203,8 +164,8 @@ def run_experiments(args):
     # baseline model
     set_seed(42)
     model = get_non_equivariant_vit(args.model_path, device)
-    val_acc = evaluate(model, val_loader)
-    test_acc = test(model, test_loader)
+    val_acc = evaluate(model, val_loader, device=device)
+    test_acc = test(model, test_loader, device=device)
     accuracies.append((type(model).__name__, val_acc, test_acc))
     print(accuracies)
 
@@ -213,9 +174,9 @@ def run_experiments(args):
     model = get_non_equivariant_vit(args.model_path, device)
     eq_model_mean = PostHocEquivariantMean(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
     if finetune:
-        eq_model_mean = train(eq_model_mean, 25, train_loader, val_loader)
-    val_acc = evaluate(eq_model_mean, val_loader)
-    test_acc = test(eq_model_mean, test_loader)
+        eq_model_mean = train(eq_model_mean, 25, train_loader, val_loader, device=device)
+    val_acc = evaluate(eq_model_mean, val_loader, device=device)
+    test_acc = test(eq_model_mean, test_loader, device=device)
     accuracies.append((type(eq_model_mean).__name__, val_acc, test_acc))
     print(accuracies)
 
@@ -224,9 +185,9 @@ def run_experiments(args):
     model = get_non_equivariant_vit(args.model_path, device)
     eq_model_max = PostHocEquivariantMax(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
     if finetune:
-        eq_model_max = train(eq_model_max, 25, train_loader, val_loader)
-    val_acc = evaluate(eq_model_max, val_loader)
-    test_acc = test(eq_model_max, test_loader)
+        eq_model_max = train(eq_model_max, 25, train_loader, val_loader, device=device)
+    val_acc = evaluate(eq_model_max, val_loader, device=device)
+    test_acc = test(eq_model_max, test_loader, device=device)
     accuracies.append((type(eq_model_max).__name__, val_acc, test_acc))
     print(accuracies)
 
@@ -235,9 +196,9 @@ def run_experiments(args):
     model = get_non_equivariant_vit(args.model_path, device)
     eq_model_sum = PostHocEquivariantSum(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
     if finetune:
-        eq_model_sum = train(eq_model_sum, 25, train_loader, val_loader)
-    val_acc = evaluate(eq_model_sum, val_loader)
-    test_acc = test(eq_model_sum, test_loader)
+        eq_model_sum = train(eq_model_sum, 25, train_loader, val_loader, device=device)
+    val_acc = evaluate(eq_model_sum, val_loader, device=device)
+    test_acc = test(eq_model_sum, test_loader, device=device)
     accuracies.append((type(eq_model_sum).__name__, val_acc, test_acc))
     print(accuracies)
 
@@ -246,9 +207,9 @@ def run_experiments(args):
     model = get_non_equivariant_vit(args.model_path, device)
     eq_model_most_probable = PostHocEquivariantMostProbable(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
     if finetune:
-        eq_model_most_probable = train(eq_model_most_probable, 25, train_loader, val_loader)
-    val_acc = evaluate(eq_model_most_probable, val_loader)
-    test_acc = test(eq_model_most_probable, test_loader)
+        eq_model_most_probable = train(eq_model_most_probable, 25, train_loader, val_loader, device=device)
+    val_acc = evaluate(eq_model_most_probable, val_loader, device=device)
+    test_acc = test(eq_model_most_probable, test_loader, device=device)
     accuracies.append((type(eq_model_most_probable).__name__, val_acc, test_acc))
     print(accuracies)
 
@@ -257,9 +218,9 @@ def run_experiments(args):
     model = get_non_equivariant_vit(args.model_path, device)
     eq_model_most_certain = PostHocMostCertain(model, n_rotations=args.n_rotations, flips=args.flips, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
     if finetune:
-        eq_model_most_certain = train(eq_model_most_certain, 25, train_loader, val_loader)
-    val_acc = evaluate(eq_model_most_certain, val_loader)
-    test_acc = test(eq_model_most_certain, test_loader)
+        eq_model_most_certain = train(eq_model_most_certain, 25, train_loader, val_loader, device=device)
+    val_acc = evaluate(eq_model_most_certain, val_loader, device=device)
+    test_acc = test(eq_model_most_certain, test_loader, device=device)
     accuracies.append((type(eq_model_most_certain).__name__, val_acc, test_acc))
     print(accuracies)
 
@@ -268,9 +229,9 @@ def run_experiments(args):
     model = get_non_equivariant_vit(args.model_path, device)
     scoring_model = ScoringModel()
     eq_model_learned_score_aggregation = PostHocLearnedScoreAggregation(model=model, scoring_model=scoring_model, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
-    eq_model_learned_score_aggregation = train(eq_model_learned_score_aggregation, 25, train_loader, val_loader)
-    val_acc = evaluate(eq_model_learned_score_aggregation, val_loader)
-    test_acc = test(eq_model_learned_score_aggregation, test_loader)
+    eq_model_learned_score_aggregation = train(eq_model_learned_score_aggregation, 25, train_loader, val_loader, device=device)
+    val_acc = evaluate(eq_model_learned_score_aggregation, val_loader, device=device)
+    test_acc = test(eq_model_learned_score_aggregation, test_loader, device=device)
     accuracies.append((type(eq_model_learned_score_aggregation).__name__, val_acc, test_acc))
     print(accuracies)
 
@@ -279,9 +240,9 @@ def run_experiments(args):
     model = get_non_equivariant_vit(args.model_path, device)
     aggregation_model = Transformer(embed_dim=64, hidden_dim=128, num_heads=4, num_layers=2, dropout=0.1)
     eq_model_learned_aggregation = PostHocLearnedAggregation(model=model, aggregation_model=aggregation_model, finetune_mlp_head=args.finetune_mlp_head, finetune_model=args.finetune_model)
-    eq_model_learned_aggregation = train(eq_model_learned_aggregation, 60, train_loader, val_loader)
-    val_acc = evaluate(eq_model_learned_aggregation, val_loader)
-    test_acc = test(eq_model_learned_aggregation, test_loader)
+    eq_model_learned_aggregation = train(eq_model_learned_aggregation, 60, train_loader, val_loader, device=device)
+    val_acc = evaluate(eq_model_learned_aggregation, val_loader, device=device)
+    test_acc = test(eq_model_learned_aggregation, test_loader, device=device)
     accuracies.append((type(eq_model_learned_aggregation).__name__, val_acc, test_acc))
     return accuracies
 
