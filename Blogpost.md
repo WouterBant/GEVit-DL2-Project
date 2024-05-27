@@ -5,24 +5,26 @@
 ### Wouter Bant, Colin Bot, Jasper Eppink, Clio Feng, Floris Six Dijkstra
 
 ---
-In this blogpost, we dive deeper into E(2) Equivariant Vision Transformers, and we propose and evaluate alternative methods for the equivariant attention models discussed in ["E(2)-Equivariant Vision Transformer"](https://proceedings.mlr.press/v216/xu23b.html). This paper proposes a Group-Equivariant Vision Transformer (GE-ViT), which is claimed to be a new positional encoding for the traditional well-known Vision Transformer (ViT) ["An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale" ](https://arxiv.org/abs/2010.11929)
+In this blogpost, we analyse and evaluate E(2) Equivariant Vision Transformers, and propose and evaluate alternative methods for the equivariant attention models discussed in ["E(2)-Equivariant Vision Transformer"](https://proceedings.mlr.press/v216/xu23b.html). This paper proposes a Group-Equivariant Vision Transformer (GE-ViT), which is claimed to be a group equivariant version of the well-known Vision Transformer (ViT) ["An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale" ](https://arxiv.org/abs/2010.11929) that uses a novel positional encoding for group equivariance.
 
 In particular, in this blogpost, we:
-1. Evaluate existing and novel methods to make non-equivariant (attention) models (e.g., [Lippe 2023](https://lightning.ai/docs/pytorch/stable/notebooks/course_UvA-DL/11-vision-transformer.html), [Dosovitskiy et al. 2021](https://arxiv.org/pdf/2010.11929)), equivariant by combining the predictions of different transformations of the input, that reflect inductive biases.
-2. Propose and evaluate methods to reduce the spatial resolution of the input to GE-ViT to reduce the number of attention computations, while preserving group invariance.
-3. Visualize latent representations in different layers of equivariant and non-equivariant models, to help researchers better understand these models. 
+1. Analyze and experiment with the GE-ViT, and reproduce a subset of the original results reported in the paper. Due to computational constraints, reproducing the full experiments was not achievable. Additionally, we conduct alternative experiments with the model and provide a comprehensive discussion of its strengths and weaknesses.
+2. Visualize different intermediate computations such as latent representations and attention maps throughout the layers of equivariant and non-equivariant models, to help researchers better understand these models. 
+3. Evaluate existing and novel methods to make non-equivariant (attention) models (e.g., [Lippe 2023](https://lightning.ai/docs/pytorch/stable/notebooks/course_UvA-DL/11-vision-transformer.html), [Dosovitskiy et al. 2021](https://arxiv.org/pdf/2010.11929)), equivariant in a post-hoc manner by combining predictions of different transformations of the input that reflect inductive biases.
+4. Propose and evaluate methods to reduce the computational costs of the GE-ViT as proposed in the paper, while preserving group invariance.
+
 ---
 
 ## The Importance of Equivariant Models
-In this section, we explain the significance of equivariant models and review prior work. 
+This section explains the significance of equivariant models and reviews prior work. 
 
-Equivariance is a fundamental property across various domains including image processing [Krizhevsky and Ilya 2012](https://proceedings.neurips.cc/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html), 3D point cloud analysis [Li, Chen, and Lee 2018](https://openaccess.thecvf.com/content_cvpr_2018/html/Li_SO-Net_Self-Organizing_Network_CVPR_2018_paper.html), chemistry [Faber et al.](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.117.135502), astronomy [Ntampaka 2016](https://iopscience.iop.org/article/10.3847/0004-637X/831/2/135/meta), and economics [Qin et al. 2022](https://proceedings.neurips.cc/paper_files/paper/2022/hash/730d61b4d9ff794a028fa3a25b9b891d-Abstract-Conference.html). Equivariance means that when a transformation is applied to the input, the output undergoes a corresponding transformation. Simply put, if the input is shifted, rotated, or scaled, the output will shift, rotate, or scale similarly. This provides geometric guarantees and is parameters efficient as weights are shared across transformations.
+Equivariance is a fundamental property across various domains including image processing [Krizhevsky and Ilya 2012](https://proceedings.neurips.cc/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html), 3D point cloud analysis [Li, Chen, and Lee 2018](https://openaccess.thecvf.com/content_cvpr_2018/html/Li_SO-Net_Self-Organizing_Network_CVPR_2018_paper.html), chemistry [Faber et al.](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.117.135502), astronomy [Ntampaka 2016](https://iopscience.iop.org/article/10.3847/0004-637X/831/2/135/meta), and economics [Qin et al. 2022](https://proceedings.neurips.cc/paper_files/paper/2022/hash/730d61b4d9ff794a028fa3a25b9b891d-Abstract-Conference.html). Equivariance means that when a transformation is applied to the input, the output undergoes a corresponding transformation. This provides geometric guarantees and is parameter efficient as weights are shared across transformations.
 
-Traditional Convolutional Neural Networks (CNNs) exhibit translation equivariance but lack equivariance to rotations in their input data. The translation equivariance of CNNs is reached by template matching of the same learnable convolutional kernel shifted over the entire feature map (or image in the first layer). The first rotation equivariant neural network was proposed by [Cohen and Welling 2016](https://proceedings.mlr.press/v48/cohenc16.html). Their method augmented the existing translation equivariance of CNNs by incorporating discrete group transformations of the kernel. This allows the Group Equivariant CNN (GE-CNN) to be equivariant to translations and rotations. In other words, this GE-CNN is equivariant to the SE(2) group (the rototranslation group).
+Traditional Convolutional Neural Networks (CNNs) exhibit translation equivariance but lack equivariance to rotations in their input data. The translation equivariance of CNNs is reached by template matching of the same learnable convolutional kernel shifted over the feature map. The first rotation equivariant neural network was proposed by [Cohen and Welling 2016](https://proceedings.mlr.press/v48/cohenc16.html). Their method augmented the existing translation equivariance of CNNs by `lifting to the group', incorporating discrete group transformations of the kernel. This allows the Group Equivariant CNN (GE-CNN) to be equivariant to translations and rotations. In other words, this GE-CNN is equivariant to the SE(2) group (the rototranslation group).
 
-In the field of Natural Language Processing (NLP), [Vaswani et al. 2017](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html) introduced transformers, a model that quickly gained significant prominence in its field. Recognizing the potential of this architecture in computer vision, [dosovitskiy et al. 2020](https://arxiv.org/abs/2010.11929) proposed vision transformers (ViTs). However, a limitation of their approach is necessitating positional encodings for each patch of pixels, losing the translation or any other form of equivariance. Despite this drawback, vision transformers demonstrated noteworthy performance, achieving state-of-the-art results on various computer vision benchmarks.
+In the field of Natural Language Processing (NLP), [Vaswani et al. 2017](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html) introduced transformers, a model that quickly gained significant prominence in its field. Recognizing the potential of this architecture in computer vision, [dosovitskiy et al. 2020](https://arxiv.org/abs/2010.11929) proposed vision transformers (ViTs). A limitation of their approach is the need for positional encodings for each patch of pixels, which loses translation or any other form of equivariance. Despite this drawback, vision transformers demonstrated noteworthy performance, achieving state-of-the-art results on various computer vision benchmarks.
 
-Initial attempts have been made to modify self-attention to become group equivariant. Before the release of the GE-ViT model, the most promising work in the field was proposed by [Romero et al. 2020](https://proceedings.mlr.press/v119/romero20a.html). They proposed Group Equivariant Stand Alone Self-Attention Networks (GSA-nets), which incorporated a different positional encoding strategy and modifications to the group self-attention mechanism to ensure equivariance.
+Initial attempts have been made to modify self-attention based models to become group equivariant. Before the release of the GE-ViT paper, the most promising work in the field was proposed by [Romero et al. 2020](https://proceedings.mlr.press/v119/romero20a.html). They proposed Group Equivariant Stand Alone Self-Attention Networks (GSA-nets), which use novel positional encoding and self-attention mechanisms for group equivariance.
 
 <table align="center">
   <tr align="center">
@@ -40,13 +42,13 @@ In Figure 1, the importance of equivariant models becomes evident. The non-equiv
 ## Recap on Vision Transformers (ViTs)
 
 [comment]: <In this section we discuss modern ViTs and older equivariant versions.>
-<details>
+<!-- <details>
 
-<summary>For a recap on ViTs click here</summary>
+<summary>For a recap on ViTs click here</summary> -->
 
 <!-- In recent years, the Transformer architecture ["Attention is all you need"](https://proceedings.neurips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html) has had a huge impact in natural language processing (NLP). The success of this architecture has paved the way for an adaptation in computer vision, giving rise to Vision Transformers (ViTs). --> 
 
-The original transformer architecture operates using an encoder-decoder structure. The encoder maps an input sequence $(x_1, ..., x_n)$ to a continuous latent variable $z=(z_1, ...,z_n)$. Using this latent variable $z$, the decoder generates an output sequence $y=(y_1, ..., y_m)$ one element at a time. At each generating time step, the model utilizes its previously generated output. The encoder and decoder both employ self-attention and fully connected layers. This process is depicted in Figure 2.
+The original transformer architecture uses an encoder-decoder structure. The encoder maps an input sequence $(x_1, ..., x_n)$ to a continuous latent variable $z=(z_1, ...,z_n)$. Using this latent variable $z$, the decoder generates an output sequence $y=(y_1, ..., y_m)$ one element at a time. At each time step, the model utilizes its previously generated output as input. The encoder and decoder both employ self-attention and fully connected layers. This process is depicted in Figure 2.
 
 <table align="center">
   <tr align="center">
@@ -74,7 +76,7 @@ The attention mechanism allows the transformer to assign different weights to in
   </tr>
 </table>
 
-Formally, the attention mechanism maps a query and a set of key-value pairs to an output. The query, key, and value are all vectors. The output is computed by taking the weighted sum of the values, with the weights determined by a scaled dot-product of the query and key vectors followed by a softmax operation. The final architecture uses multi-head attention, which consists of several attention layers computed in parallel. For efficiency, the attention for a set of queries is calculated simultaneously by packing all queries into a matrix Q, all keys into a matrix K, and all values into a matrix V. Figure 4 illustrates the attention mechanism.
+Formally, the attention mechanism maps a query and a set of key-value pairs to an output. The query, key, and value are all vectors. The output is computed by taking the weighted sum of the values. The weights are equal to a scaled dot-product of the query and key vectors followed by a softmax operation. The final architecture uses multi-head attention, which consists of several attention layers ('heads') computed in parallel. For efficiency, the attention for a set of queries is calculated simultaneously by packing all queries into a matrix Q, all keys into a matrix K, and all values into a matrix V. Figure 4 illustrates the attention mechanism.
 
 <table align="center">
   <tr align="center">
@@ -88,7 +90,7 @@ Formally, the attention mechanism maps a query and a set of key-value pairs to a
 
 <strong> Vision Transformer: </strong>
 
-The ViT closely follows the encoder of the original Transformer architecture ["An Image is Worth...](https://arxiv.org/abs/2010.11929). The standard Transformer receives a 1D sequence of token embeddings as input. For the ViT to handle 2D images, the image $x \in \mathbb{R}^{H \times W \times C}$ is reshaped into a sequence of flattened 2D patches $x_p \in \mathbb{R}^{N \times (P^2 \cdot C)}$. In this input $H$ is the height of the input image, $W$ is the width, and $C$ is the number of channels (3 for RGB images). Furthermore, $(P, P)$ is the spatial resolution of each image patch and $N=HW/P^2$ is the number of patches, forming the input sequence length to the transformer. Each patch is flattened and mapped to $D$ dimensions using a trainable linear projection, resulting in individual patch embeddings. Learnable positional encodings are added to these embeddings to inform the attention layers about the structure of the image. A schematic drawing of this architecture is shown in Figure 5.
+The ViT is similar to the original Transformer architecture's encoder ["An Image is Worth...](https://arxiv.org/abs/2010.11929). The standard Transformer receives a 1D sequence of token embeddings as input. For the ViT to handle 2D images, the image $x \in \mathbb{R}^{H \times W \times C}$ is reshaped into a sequence of flattened 2D patches $x_p \in \mathbb{R}^{N \times (P^2 \cdot C)}$. In this input $H$ is the height of the input image, $W$ is the width, and $C$ is the number of channels (3 for RGB images). Furthermore, $(P, P)$ is the spatial resolution of each image patch and $N=HW/P^2$ is the number of patches, or the input sequence length to the transformer. Each patch is flattened and mapped to $D$ dimensions using a trainable linear projection, resulting in individual patch embeddings. Learnable positional encodings are added to these embeddings to inform the attention layers about the structure of the image. A schematic drawing of this architecture is shown in Figure 5.
 
 <table align="center">
   <tr align="center">
@@ -99,15 +101,15 @@ The ViT closely follows the encoder of the original Transformer architecture ["A
   </tr>
 </table>
 
-From the above scheme and intuition, it is clear that this architecture is not equivariant to translations and rotations as each translation or rotation results in a completely new patch embedding. On top of that, the positional encodings are not constrained to be equivariant to different group transformations of the input.
-</details>
+It is clear that this architecture is not equivariant to translations and rotations as each translation or rotation results in a completely new patch embedding. On top of that, the positional encodings are not constrained to be equivariant to different group transformations of the input.
+<!-- </details> -->
 
 ---
 
 ## GE-ViT
 
 ### GE-ViT Architecture
-The method proposed by the paper, known as GE-ViT, is a modified version of the GSA-Net model. The structure of GE-ViT and its attention blocks is visualized in Figure 6. 
+The method proposed by the paper, known as GE-ViT, is a modified version of the GSA-Net model. The structure of GE-ViT/GSA-Net and its attention blocks is visualized in Figure 6. 
 
 <table align="center">
   <tr align="center">
@@ -118,22 +120,24 @@ The method proposed by the paper, known as GE-ViT, is a modified version of the 
   </tr>
 </table>
 
-What is important to note is that this model doesn't use patches like the modern ViT, but applies pixel-wise attention in local neighborhoods of each pixel. The lifting self-attention layer transforms the positional encoding with the group actions and the resulting encodings are all applied to the same input patch after which pixel-wise attention is computed, in the next section we dive deeper into this positional encoding. After the lifting layer, the resulting layer normalization is applied and the resulting features are put through a Swish activation function.
+What is important to note is that this model doesn't use patches like the modern ViT, but applies pixel-wise attention in local neighborhoods around each pixel. This does not become particularly clear from the original paper however this is evident in the provided source code of the GE-ViT paper. The lifting self-attention layer transforms the positional encoding with the group actions. The resulting stack of encodings is applied to each pixel's local neighborhood to compute attention scores. The next section further elaborates on this positional encoding. 
 
-Next, these features are processed through $N$ attention block layers to refine the feature representations. In these attention blocks, GE self-attention is used which is analogous to the group convolutions of the GE-CNN, however, the transformations are applied to the positional encodings.
+After the lifting layer, the resulting layer normalization is applied and the resulting features are put through a Swish activation function. These features are processed through $N$ attention block layers to refine the feature representations. In these attention blocks, GE self-attention is analogous to the group convolutions of the GE-CNN (however the group actions are applied to the positional encodings, not the input itself).
 
-Finally, the global pooling block aggregates features in a transformation-invariant manner across the spatial dimensions. Initially, max pooling is applied both spatially and over the group elements. Subsequently, spatial averaging is done on the features to reduce dimensionality further. Both of these aggregations are invariant to group transformations (because they are independent of input order). 
+<!-- Finally, the global pooling block aggregates features in a transformation-invariant manner across the spatial dimensions. Initially, max pooling is applied over the group elements. Subsequently, spatial averaging is done on the features to reduce dimensionality further. Both of these aggregations are invariant to group transformations (because they are independent of input order).  -->
+
+Finally, the global pooling block aggregates features in a transformation-invariant manner across the spatial dimensions. Sum pooling is applied over the spatial dimensions and max pooling over the other group elements. Both of these aggregations are invariant to group transformations (because they are independent of input order). Note that this is inconsistent with what the authors mentioned in their paper, but this was how it was done in the code.
 
 ### GE-ViT attention & positional embedding
-The main update to the GSA-Net method proposed by the GE-ViT paper is an update of the positional encoding that addresses its group equivariance. This update corrects a minor mathematical error in GSA-Net, leading to a slight modification in the generation of positional encodings.
+The novel contribution of the GE-ViT paper is an update of the GSA-Net positional encoding that addresses its group equivariance. This update corrects a minor mathematical error in GSA-Net, leading to a slight modification in the generation of positional encodings. The minor change involved a missing group action in the positional encoding calculation, which was mathematically proven to be crucial for group equivariance.
 
-As attention is applied on the pixel level and because of the quadratic time complexity of the attention mechanism, attention in GSA-Nets is only applied to an NxN local neighborhood around each pixel. The attention computation is done per entire row and column of the local neighborhood instead of individual pixels to reduce the number of computations (the row and column attention scores are summed after).
+Because attention is applied on the pixel level and because of the quadratic time complexity of the attention mechanism, it is too computationally expensive to attend to all pixels of the input. Instead, attention in GSA-Nets is only applied to a NxN local neighborhood around each pixel. The attention computation is separated between the rows and columns of the local neighborhood instead of individual pixels to reduce the number of computations (the row and column attention scores are summed after).
 
-To achieve group equivariance, a stack of positional encodings is generated including an encoding for every group element with the corresponding group action applied to it. This is similar to how an input image is stacked in a GE-CNN lifting layer because it takes a base ‘image’ (encoding in this case) and applies the group action for every group element. In practice, this means that for a discrete E(2) group with 90-degree rotations with flips (8 elements in total), a stack of 8 positional encodings is generated.
+To achieve group equivariance, a stack of positional encodings is generated including an encoding for every group element with its corresponding group action applied to the encoding. This is similar to how an input image is processed in a GE-CNN lifting layer because it takes a base ‘image’ (encoding in this case) and applies the group action for every group element. In practice, this means that for a discrete E(2) group with 90-degree rotations with flips (8 elements in total), a stack of 8 positional encodings is generated.
 
 This works as follows:
 
-* For each group element, a ‘positional embedding index’ is generated by taking a base NxN embedding with C channels and applying the group action corresponding to the element. The split row and column embedding indices are visualized in figure TODO number. 
+* For every group element, a ‘positional embedding index’ is generated by taking a base NxN embedding and applying the group action corresponding to the element. The split row and column embedding indices are visualized in figure TODO number. 
 
 
 ![figure](figures/row_embd_idxs.png)
@@ -159,17 +163,18 @@ TODO make a nice table figure
 
 ## Discussion of ["E(2)-Equivariant Vision Transformer"](https://proceedings.mlr.press/v216/xu23b.html)
 
-In researching and reproducing this paper and its proposed architecture, several aspects caught our attention. While their proposed architecture offers advantages over GSA-nets and traditional Vision Transformers, it also has some weaknesses that we would like to highlight.
+
+While researching and reproducing the proposed architecture from this paper, several aspects stood out to us. While their proposed architecture has a clear advantage over GSA-nets and traditional Vision Transformers, it also has some notable weaknesses that we want to discuss.
 
 [comment]: < Here we say that these methods are computationally expensive and some of our findings. eg steerable but also artifact-like differences (show this with a figure). quickly mention we evaluate on the validation set an increased batch size (and proportionally learning rate) because of computational constraints. Display the results we got for their methods here and say we use the reported numbers of the best method in the following parts of the blogpost. >
 
 <strong> Weaknesses and strengths of proposed method </strong>
 
-The authors of the original equivariant vision transformer claim that their positional encodings result in an E(2) equivariant model. This has the benefit of providing consistent results and predictions for rotated images, a crucial property in fields like medical cell analysis. To illustrate this, we display the latent representations of inputs transformed according to an E(2) group action (rototranslation + mirroring) in the following figure.
+The authors of the original equivariant vision transformer claim that their positional encodings result in an E(2) equivariant model. This is beneficial because it ensures parameter efficiency and consistent predictions for rotated images, which is crucial in applications such as medical cell analysis. To demonstrate this, we display the latent representations of inputs transformed according to an E(2) group action (rototranslation + mirroring) in the following figure.
 
 ![figure](figures/GEVIT_latent_representations_2.gif)
 
-Furthermore, Equivariant networks typically benefit from weight sharing and faster generalization. However, the authors did not explore this advantage in depth, so we have chosen to investigate this further.
+Furthermore, Equivariant networks typically benefit from weight sharing and faster generalization. However, the authors did not explore this advantage in depth, so we have chosen to investigate this further. This was done using experiments which will be explained in detail later.
 
 In addition to strengths, we also identified several weaknesses in their approach and methods:
 
@@ -185,7 +190,7 @@ In addition to strengths, we also identified several weaknesses in their approac
 
 ![not steerable](figures/not_steerable.png)
 
-From logs in the codebase of the authors, we saw that the shortest experiment on rotation MNIST took a week. We don't have the computational resources for this and therefore failed to reproduce their experiments. However, when we evaluated on the validation set and increased the batch size (and proportionally the learning rate) we were able to do one run for rotation MNIST for their best-reported model equivariant to 90-degree rotations. This model attained an accuracy of 96.42\% which is significantly lower than the reported 97.58\%, however, this is expected as we didn't use the test set for validation. Hence, in the rest of this blog post, we assume the reported numbers to be correct and report these for comparison. For all experiments, we do we continue using a separate validation and test set.
+From logs in the codebase of the authors, we saw that the shortest experiment on the smallest dataset took a week. We don't have the computational resources for this and therefore are unable to fully reproduce their experiments. However, when we evaluated on the validation set and increased the batch size (and proportionally the learning rate) we were able to do one run for the rotation MNIST dataset for their best-reported model equivariant to 90-degree rotations. This model attained an accuracy of **96.42%** which is significantly lower than the reported **97.58\%**, however, this is expected as we didn't use the test set for validation. Hence, in the remainder of this blogpost, we assume the reported numbers to be correct and report these for comparison. For all experiments, we continue using a separate validation and test set.
 
 <!-- <strong> Our novel contribution </strong>
 
@@ -211,92 +216,96 @@ a group transformation of its output. [Basu et al. 2023](https://arxiv.org/abs/2
       <td><img src="figures/posthocaggregation.png" width=600></td>
   </tr>
   <tr align="left">
-    <td colspan=2><b>Figure TODO.</b> Pipeline post hoc equivariant models. </td>
+    <td colspan=2><b>Figure 7.</b> Pipeline post hoc equivariant models. </td>
   </tr>
 </table>
 
-> This image illustrates how post hoc equivariance works. The input image undergoes various transformations to achieve equivariance (in this case, 90-degree rotations). Each transformed image is processed by the same model, which generates latent embeddings or class probabilities. These embeddings (or probabilities) are then aggregated in an invariant way. Note that the model's latent representations are equivariant to the group (because of the lifting to the group) until they are aggregated, which is done using an invariant operation.
+Figure 7 illustrates how post hoc equivariance works. The input image undergoes various transformations to achieve equivariance (in this case, 90-degree rotations). Each transformed image is processed by the same model, which generates latent embeddings or class probabilities. These embeddings (or probabilities) are then aggregated in an invariant way. Note that the model's latent representations are equivariant to the group (because of the lifting to the group) until they are aggregated, which is done using an invariant operation.
 
 Besides these ways of aggregating the embeddings we propose and evaluate the following ways of aggregating the latent dimensions: sum pooling, max pooling, and multi-head attention without positional encodings. Furthermore, we experiment with predicting the class with the highest probability among all transformations and predicting the class with the highest product of probabilities. In the next section, we will more formally discuss these methods.
 
-### Method
+### Equivariant Embedding Model
+To transform a pre-trained non-equivariant model $M$ into an equivariant model $M_G$, our objective is to create $M_G$ such that it maintains equivariance to the actions of a finite group $G$, while minimizing the collective discrepancies between the features $M(gx)$ and $M_G(gx)$ for any $x$, across all $g \in G$. This ensures the preservation of as much pre-trained knowledge from $M$ as possible. We operate under the assumption that the group actions are well-defined.
 
-<!-- to do tonight: 
-1. Demonstrate how the minimization process works to achieve the goal
-2. equivariant model 
-3. and how each one is invariant:
-3.1 with math + try to prove the f(g) = g(f) (but that maybe the process for equivariant, not invariant)
-4. besides intuition, 
-the math and research behind that show the equivariant and invariant-->
+In our investigation of image classification, we utilize the $C_4$ (90° rotations) and $D_4$ groups (90° rotations and horizontal flips). The reason we choose them is because these groups consistently outperform non-equivariant networks on the CIFAR-10 dataset, as evidenced by [Cohen and Welling 2016](https://arxiv.org/abs/1602.07576).
 
+The $C_4$ group comprises {e, r, $r^2$, $r^3$}, where $e$ denotes the identity and $r$ represents a 90° rotation.
 
-In this section, we drew inspiration from [Basu et al. 2023](https://arxiv.org/abs/2210.06475). They proposed a fine-tuning method called equituning that starts with potentially non-equivariant model M and produces a model $M_G$ equivariant to a group G. 
+Given an image set $X$, the group action of $G$ is applied on $X$ as $\Gamma X$: $G \times X \rightarrow X$. We denote $\Gamma X(g,x)$ as $gx$. A model $M$: $X \rightarrow Y$ is considered equivariant to $G$ under the group action of $G$ on $X$ and $Y$ if $M(gx) = g(M(x))$ for all $g \in G$ and $x \in X$. This implies that any group transformation $g$ applied to the input $\Gamma X(g,x)$ should result in an equivalent transformation of the output $\Gamma Y(gM(x))$.
 
-Given a set $\chi$, a group action of G on X is defined as $\Gamma X$: $G \times \chi$ -> $\chi$. We write $\Gamma X(g,x)$ simply as gx for brevity. A model M: X -> Y is equivariant to G under the group action of G on X and Y if M(gx) = g(M(x)) for all g $\in$ G, x $\in$ $\chi$. This essentially means that any group transformation g to the input $\Gamma X(g,x)$ should reflect an equivalent group transformation of the output  $\Gamma Y(g,M(x))$.
+To convert the non-equivariant model to an equivariant one, we aim to solve the following optimization problem:
 
-Equituning converts a pre-trained model into an equivariant version by minimizing the distance of features obtained from pretrained and equivariant models. 
-
-Here, we proposed three methods. The output of an equituned model is given by
-
-- $x$ as the input image.
-- $g$ as a transformation in the group $G$.
-- $g^{-1}$ as a inverse of the transformation in the group $G$.
-- $M(x)$ as the output logits obtained from the original input image $x$.
-- $M_G(x)$ as the output logits obtained from the transformed input image $gx$.
-
-Mean Pooling: 
-
-$$ M_G(x) = \frac{\sum_{g \in G}{M(gx)}}{|G|} $$
-
-Max Pooling:
-
-$$ (M_G(x))i = \max_{g \in G}({M(gx)})_i $$
-
-Sum Pooling: 
-
-$$ M_G(x) = \sum_{g \in G}{M(gx)} $$
-
-#### Most Likely and Certain
-Instead of combining the embeddings to get the final logits, in this approach, we compute logits for each transformation independently. Here, we propose two methods to select the final logits.
-
-Select Most Likely: Combine them to get the final logits.
-
-$$  M_G(x) = \log \left( \prod_{g \in G}\text{softmax}{(M(gx))} \right) $$
-
-Select Most Certain: Select the transformation with the highest probability for each class. It then selects the logits corresponding to these highest probabilities.
-
-$$  M_G(x) = \text{arg max}_{g \in G} (\text{softmax}{(M(gx))}) $$
-
-#### Learned weighted average
-Similar to the idea of λ-equitune in (Sourya Basu (2023). Efficient Equivariant Transfer Learning from Pretrained Models), revolves around recognizing that, within a pretrained model M, features M(gx) derived from fixed x are not uniformly crucial across all transformations g $\in$ G. Let λ(gx) denote the significance weight assigned to feature M(gx) for g $\in$ G, x $\in$ X. Assuming a finite G, as in Basu et al. (2023), λ : X → $R^+$ is predefined. The λ-equituned model, denoted as $M^{λ} {G}$, aims to minimize:
-
-$$\min_{ M_G^{λ}(x)} \sum_{g \in G} || λ(gx) M(gx) -  M_G^{λ}(g,x)||^{2}$$
+$$ \min_{M_G(x)} \sum_{g \in G} ||M(gx) -M_G(gx)||_2^2 $$
 
 subject to:
 
-$$ M_G^{λ}(gx) = g M_G^{λ}(x)$$ 
+$$ M_G(gx) = gM_G(x) $$
 
-for all g $\in$ G.
+for all $g \in G$.
 
-The solution to the above equation, referred to as λ-equitune, is given by:
+Here, we visualize the behavior of the 'Learned Attention Aggregation' model's transformer block when its input is transformed by a group action to which the model is supposed to be equivariant. For an image that is rotated and flipped in 8 different ways, we visualized how the various tokens (transformed embeddings for each group element) and the CLS token self-attend across the 4 transformer layers. This visualization is shown in Figure 8. Notice how the CLS token, which is used for the final scoring, attends to different columns (representing different transformed input embeddings) for each transformation.
 
-$$ M_G^{λ}(x) = \sum_{g \in G}^{|G|} g^{-1}λ(gx)M(gx) \frac{1}{\sum_{g \in G}{λ(gx)}}$$
+<table align="center">
+  <tr align="center">
+      <td><img src="figures/PostHocLearnedAggregation_attention_visualisation.png" width=600></td>
+  </tr>
+  <tr align="left">
+    <td colspan=2><b>Figure 8.</b> Self-attention weights in the LearnedAggregation post hoc equivariant ViT for input transformed by various group actions.</td>
+  </tr>
+</table>
 
-#### Learned attention aggregation
+### Invariant aggregation layer
+For the final layer, unlike [Basu et al. 2023](https://arxiv.org/abs/2210.06475) who utilized a group-equivariant custom layer for language model compositional generalization in a language-to-action translation context, we seek invariant results for image classification.
 
-This method aggregates the embeddings using a transformer and then passes the combined embedding through the model's MLP head to get the final logits. Since the transformer operations (layer normalization, multi-head attention, and feed-forward networks) do not depend on the order of embeddings, the aggregated result is independent of the transformations applied to the input. The final logits are produced by passing the aggregated embeddings through the MLP head. This process is invariant to the transformations since it operates on the aggregated embeddings representing the transformed input space.
+For our purposes, we define a model $M$: $X \rightarrow Y$ as invariant to $G$ under the group action of $G$ on $X$ and $Y$ if $M(gx) = M(x)$ for all $g \in G$ and $x \in X$, indicating that the transformation does not impact the output.
 
-$$
-M_G(x) = \text{Mlp}(\text{Transformer}(M(gx))), g\in G
-$$
+Hence, for the final invariant layer, we employ the following methods:
+#### Method 1: Combining Embeddings from all Transformation Groups
 
-Since the aggregation model (transformer) is designed to handle sequences of embeddings in an order-invariant manner (due to the self-attention mechanism), the output should remain consistent under the same group transformations applied to the input and the output:
+- $x$: input image.
+- $g$: transformation in group $G$.
+- $M(x)$: output logits from the original input image $x$.
+- $M_G(x)$: transformation-invariant output logits.
 
-$$
- M_G(x) = g( M_G(x))
-$$
+**Mean Pooling**: Averaging the logits from all action groups $G$.
 
-Therefore, the `PH Learned Attention Aggregation` model is equivariant by design because the transformer aggregation maintains the equivariance property through its self-attention mechanism and the consistent application of transformations across the input space. Using the class token ensures that the final output logits are derived in a manner that respects the input transformations.
+$$ M_G(x) = \frac{\sum_{g \in G}{M(gx)}}{|G|} $$
+
+This method resembles [Basu et al. 2023](https://arxiv.org/abs/2210.06475), though they employed the Reynolds operator with the inverse of the transformation $g^{-1}$ to satisfy $M(gx) = g(M(x))$ as demonstrated by [Yarotsky 2022](https://arxiv.org/abs/1804.10306).
+
+**Max Pooling**: Selecting the highest logit for each element within the vector across all action groups $G$.
+
+$$ (M_G(x))_i = \max_{g \in G}({M(gx)})_i $$
+
+**Sum Pooling**: Summing the logits from all action groups $G$.
+
+$$ M_G(x) = \sum_{g \in G}{M(gx)} $$
+
+#### Method 2: Computing Logits for Each Transformation Independently
+
+**Select Most Likely**: Combining through softmax to obtain the final logits.
+
+$$  M_G(x) = \log \left( \prod_{g \in G}\text{softmax}{(M(gx))} \right) $$
+
+**Select Most Certain**: Selecting the transformation with the highest probability for each class, then selecting the logits corresponding to these highest probabilities.
+
+$$  M_G(x) = \text{arg max}_{g \in G} (\text{softmax}{(M(gx))}) $$
+
+#### Method 3: Utilizing External Model within Aggregation
+
+**Learned Weighted Average**: Incorporating significance weight with mean pooling.
+
+Since features $M(gx)$ derived from a fixed $x$ within a pretrained model $M$ are not uniformly crucial across all transformations $g \in G$, we incorporate significance weight with the embedding. After obtaining the embedding for each transformation, we pass the embedding through a simple fully connected neural network to predict weights from input feature vectors, leveraging a linear transformation and GELU activation for effective learning. Additionally, we normalize the weights so that the sum for all embeddings is 1.
+
+Let $λ(gx)$ denote the significance weight assigned to feature $M(gx)$ for $g \in G$, $x \in X$. Inspired by [Basu et al. 2023](https://arxiv.org/abs/2210.06475), though with the goal of invariance, assuming a finite $G$, $λ : X → R^+$ is predefined. 
+
+$$ M_G(x) = \sum_{g \in G}^{|G|}λ(gx)M(gx) \frac{1}{\sum_{g \in G}{λ(gx)}}$$
+
+**Learned Attention Aggregation**: Aggregating the embeddings using a transformer, then passing the combined embedding through the model's MLP head to obtain the final logits. 
+
+$$ M_G(x) = \text{Mlp}(\text{Transformer}(M(gx))), g\in G $$
+
+Since transformer operations (layer normalization, multi-head attention, and feed-forward networks) are independent of the order of embeddings, the aggregated result is independent of the transformations applied to the input. The final logits are produced by passing the aggregated embeddings through the MLP head. This process is invariant to the transformations since it operates on the aggregated embeddings representing the transformed input space. As these methods are unaffected by the transformed input, they yield invariant outputs.
 
 ### Results
 We evaluated all approaches through various experiments, examining their zero-shot impact, the effect of fine-tuning only the last layer, and the impact of fine-tuning the entire model.
@@ -436,17 +445,6 @@ Second, as expected, the dominant trend shows that fine-tuning the last layer le
 
 We found that in this experiment, learning to score the embeddings or learning to aggregate the embeddings with multi-head attention led to overfitting, resulting in worse validation and test accuracies.
 
-We also aimed to visualize the behavior of the 'Learned Attention Aggregation' model's transformer block when its input is transformed by a group action to which the model is supposed to be equivariant. For an image that is rotated and flipped in 8 different ways, we visualized how the various tokens (transformed embeddings for each group element) and the CLS token self-attend across the 4 transformer layers. This visualization is shown in Figure [REF]. Notice how the CLS token, which is used for the final scoring, attends to different columns (representing different transformed input embeddings) for each transformation.
-
-<table align="center">
-  <tr align="center">
-      <td><img src="figures/PostHocLearnedAggregation_attention_visualisation.png" width=600></td>
-  </tr>
-  <tr align="left">
-    <td colspan=2><b>Figure TODO NUMBER.</b> Self-attention weights in the LearnedAggregation post hoc equivariant ViT for input transformed by various group actions.</td>
-  </tr>
-</table>
-
 
  
 #### 2. Training on the full standard MNIST dataset and evaluating on the full rotation MNIST dataset
@@ -548,18 +546,18 @@ One of the advantages of purely equivariant models is that the training data can
     </tbody>
 </table>
 
-The non-equivariant model trained on MNIST attained an accuracy of around 29% on rotation MNIST. This model can accurately predict the digits in their normal orientation but struggles with heavily rotated images. The best approach that doesn't require any learning is selecting the transformation that gives the highest probability to one particular class, achieving a test accuracy of 49%. This can be explained by the model being uncertain about transformations of digits that were unseen during training but assigning high probability to digits close to their original orientation.
+The non-equivariant model trained on MNIST attained an accuracy of around **29%** on rotation MNIST. This model can accurately predict the digits in their normal orientation but struggles with heavily rotated images. The best approach that doesn't require any learning is selecting the transformation that gives the highest probability to one particular class, achieving a test accuracy of **49%**. This can be explained by the model being uncertain about transformations of digits that were unseen during training but assigning high probability to digits close to their original orientation.
 
-Interestingly, the models that require learning perform much better in this experiment. Aggregating the embeddings with multi-head attention even leads to an accuracy of about 92% while keeping all parameters of the original model fixed. However, similar to the previous results, when fine-tuning the entire model, taking the mean or sum of the embeddings proves to be more effective.
+Interestingly, the models that require learning perform much better in this experiment. Aggregating the embeddings with multi-head attention even leads to an accuracy of about **92%** while keeping all parameters of the original model fixed. However, similar to the previous results, when fine-tuning the entire model, taking the mean or sum of the embeddings proves to be more effective.
 
-Another interesting insight is the MostProbable model's behavior with input that is rotated to look like another number (e.g. a 6 flipped vertically to look like a 9). It seems to perform well in these edge cases, assigning more probability to the correct class in many of these cases. One such case was visualized in Figure TODO number.
+Another interesting insight is the MostProbable model's behavior with input that is rotated to look like another number (e.g. a 6 flipped vertically to look like a 9). It seems to perform well in these edge cases, assigning more probability to the correct class in many of these cases. One such case is visualized in Figure 9.
 
 <table align="center">
   <tr align="center">
       <td><img src="figures/meanagg_vs_mostprobable.png" width=600></td>
   </tr>
   <tr align="left">
-    <td colspan=2><b>Figure TODO NUMBER.</b> Comparing predicted probabilities from the MeanAggregation and MostProbable post hoc equivariant transformer models in an edge case where a 6 is rotated to possibly be confused with a 9.</td>
+    <td colspan=2><b>Figure 9.</b> Comparing predicted probabilities from the MeanAggregation and MostProbable post hoc equivariant transformer models in an edge case where a 6 is rotated to possibly be confused with a 9.</td>
   </tr>
 </table>
 
@@ -568,7 +566,7 @@ Another interesting insight is the MostProbable model's behavior with input that
 #### 3. Training on 10% of rotation MNIST and evaluating on the full rotation MNIST dataset
 One key advantage of equivariant models is their data efficiency, owing to the way inductive biases are incorporated. Therefore, we now compare the performance of post hoc methods against the equivariant [GE-ViT](https://arxiv.org/abs/2306.06722) when training on only 10% of the rotated MNIST dataset.
 
-We also evaluated the performance of GE-ViT when trained on a reduced dataset comprising only 10% of the total data. Interestingly, we observed that this model reached convergence after 600 epochs, achieving a test accuracy of only 83.55%. However, this accuracy was notably lower compared to when the model was trained on the complete training set.
+We also evaluated the performance of GE-ViT when trained on a reduced dataset comprising only 10% of the total data. Interestingly, we observed that this model reached convergence after 600 epochs, achieving a test accuracy of only **83.55%**. However, this accuracy was notably lower compared to when the model was trained on the complete training set.
 
 <table>
     <thead>
@@ -751,7 +749,7 @@ Until now, our analysis has been limited to models trained exclusively on either
     </tbody>
 </table>
 
-We assessed the pretrained model's performance on PCam's validation and test sets, revealing accuracies of 87.8% and 86.6% respectively. Remarkably, employing mean pooling boosted these accuracies to 90.4% and 87.5% through just 1 epoch of fine-tuning. This could be because the mean pooling equation minimizes the distance between the features obtained by a pretrained model and the equivariant model the most compared to the other two methods. Additionally, both summing and the most probable method yielded favorable results in this experiment, underscoring the efficacy of incorporating inductive biases into pretrained models to enhance performance.
+We assessed the pretrained model's performance on PCam's validation and test sets, revealing accuracies of **87.8%** and **86.6%** respectively. Remarkably, employing mean pooling boosted these accuracies to **90.4%** and **87.5%** through just 1 epoch of fine-tuning. This could be because the mean pooling equation minimizes the distance between the features obtained by a pretrained model and the equivariant model the most compared to the other two methods. Additionally, both summing and the most probable method yielded favorable results in this experiment, underscoring the efficacy of incorporating inductive biases into pretrained models to enhance performance.
 
 A notable observation is the considerable gap between validation and test accuracies. Given our single-epoch fine-tuning approach on the training set, it's strange why the validation accuracy would differ significantly from the test accuracy. Similar trends were noticed in other PCam experiments, where models exhibited rapid validation accuracy growth but more subdued improvements on the test set. We encourage further study on this dataset as it is a widely used benchmark.
 
@@ -761,27 +759,27 @@ Furthermore, our findings demonstrate the superiority of large models over GSA-n
 #### Introduction
 GSA-Nets and GE-ViTs are slow because attention is applied on the pixel level. We propose two methods to reduce the spatial resolution of the input to GE-ViT which we dub the artificial image. 
 
-The first approach is to split the image into patches that are lifted to the group. Subsequently, each transformation is projected and the resulting embeddings are averaged over the group producing an embedding for the patch. The image structure is preserved, but the artificial image contains the embeddings for the patches with dimensionality 64. This pipeline is visualized in the Figure below:
+The first approach is to split the image into patches that are lifted to the group. Subsequently, each transformation is projected and the resulting embeddings are averaged over the group producing an embedding for the patch. The image structure is preserved, but the artificial image contains the embeddings for the patches with dimensionality 64. This pipeline is visualized in the Figure 10 below:
 
 <table align="center">
   <tr align="center">
       <td><img src="figures/modern_eq_vit.png" width=600></td>
   </tr>
   <tr align="left">
-    <td colspan=2><b>Figure TODO.</b> Pipeline for creating an artificial image composed of group invariant patch embeddings. </td>
+    <td colspan=2><b>Figure 10.</b> Pipeline for creating an artificial image composed of group invariant patch embeddings. </td>
   </tr>
 </table>
 
 > As in the normal ViT we create patches, however, these patches are lifted to the group and the resulting transformations are each processed by the same model. Afterward, the images are invariantly aggregated over the group and reshaped to the original image structure but now with fewer pixels. The resulting artificial image is fed to GE-ViT as normal.
 
-The second approach is to process the image with a group convolutional neural network. Here we don't pad the image so the spatial resolution naturally decreases. Here were output 32 E(2) invariant feature maps with spatial resolution 28 by 28. This stack of feature maps is the artificial image on which we apply GE-ViT. This process is visualized below:
+The second approach is to process the image with a group convolutional neural network. Here we don't pad the image so the spatial resolution naturally decreases. Here were output 32 E(2) invariant feature maps with spatial resolution 28 by 28. This stack of feature maps is the artificial image on which we apply GE-ViT. This process is visualized in Figure 11 below:
 
 <table align="center">
   <tr align="center">
       <td><img src="figures/hybrid.png" width=600></td>
   </tr>
   <tr align="left">
-    <td colspan=2><b>Figure TODO.</b> Pipeline for creating an artificial image composed of group invariant feature maps from a GE-CNN. </td>
+    <td colspan=2><b>Figure 11.</b> Pipeline for creating an artificial image composed of group invariant feature maps from a GE-CNN. </td>
   </tr>
 </table>
 
@@ -797,38 +795,43 @@ Because of computational constraints we train on 1 percent of Patch Camelyon for
       <td><img src="figures/ablation.png" width=600></td>
   </tr>
   <tr align="left">
-    <td colspan=2><b>Figure TODO.</b> Accuracy vs. epoch time for different patch sizes. </td>
+    <td colspan=2><b>Figure 12.</b> Accuracy vs. epoch time for different patch sizes. </td>
   </tr>
 </table>
 
 > Reducing the spatial dimension of the input significantly decreases the training time, however, leads to a decrease in performance compared to GE-ViT.
 
-The results of this experiment are visualized in Figure (TODO give figure number). First, it can be observed that increasing the patch size decreases training time significantly. This is because reducing the spatial resolution decreases the number of computations by GE-ViT. Second, we observe the optimal patch size, in terms of accuracy, is 6. Smaller patch sizes likely split tumor cells making the classification more challenging. Larger patch sizes can likely not be represented well with a 64-dimensional embedding obtained from a linear projection. 
+The results of this experiment are visualized in Figure 12. First, it can be observed that increasing the patch size decreases training time significantly. This is because reducing the spatial resolution decreases the number of computations by GE-ViT. Second, we observe the optimal patch size, in terms of accuracy, is 6. Smaller patch sizes likely split tumor cells making the classification more challenging. Larger patch sizes can likely not be represented well with a 64-dimensional embedding obtained from a linear projection. 
 
-If our hypothesis is correct, this shows the downside of using the modern ViT, which uses patches, for particular applications where a few pixels determine the label of the image (as in detection of pathological cells). This is illustrated in the figure below where black arrows indicate note tumor cell infiltration ([image courtesy](https://www.researchgate.net/publication/337826655_WSZG_inhibits_BMSC-induced_EMT_and_bone_metastasis_in_breast_cancer_by_regulating_TGF-b1Smads_signaling)).
+If our hypothesis is correct, this shows the downside of using the modern ViT, which uses patches, for particular applications where a few pixels determine the label of the image (as in detection of pathological cells). This is illustrated in the Figure 13 below where black arrows indicate note tumor cell infiltration ([image courtesy](https://www.researchgate.net/publication/337826655_WSZG_inhibits_BMSC-induced_EMT_and_bone_metastasis_in_breast_cancer_by_regulating_TGF-b1Smads_signaling)).
 
 <table align="center">
   <tr align="center">
       <td><img src="figures/pathological_cell.png" width=500></td>
   </tr>
   <tr align="left">
-    <td colspan=2><b>Figure TODO.</b> Metastatic tissue, black arrows indicate tumor cell infiltration. </td>
+    <td colspan=2><b>Figure 13.</b> Metastatic tissue, black arrows indicate tumor cell infiltration. </td>
   </tr>
 </table>
 
 > The image above is not part of the Patch Camelyon dataset, however, is indicative of the difficulty. For the Patch Camelyon dataset, it holds that ["A positive label indicates that the center 32x32px region of a patch contains at least one pixel of tumor tissue"](https://github.com/basveeling/pcam/tree/master?tab=readme-ov-file#details).
 
 ##### Approach 2: downsizing image with GE-CNN
-In the previous section, we explained the downside of using patches. An alternative approach to downsizing the image with a GE-CNN.
 
-TODO results floris
+In the previous section, we discussed the limitations of using patches. As an alternative, we explored downsizing the image using a GE-CNN. We tested various approaches, starting with letting the spatial resolution decrease naturally through group convolutions. However, to achieve the necessary speed, we had to reduce the spatial resolution of Patch Camelyon from 96 to below 32. Using many convolutions with small kernels (3x3 or 5x5) complicated the optimization, making it difficult to find effective hyperparameters. Fewer convolutions with larger kernels (20x20) resulted in poor performance.
+
+We then opted for pooling. Initially, we tried mean pooling, which also yielded poor results. Surprisingly, reducing the spatial dimensions using eight consecutive convolutions with a 5x5 kernel, followed by reducing the resulting 64 spatial dimensions to 6x6 with pooling, worked best. More convolutions and retaining more spatial dimensions with pooling both made the optimization process harder. The GE-CNN output contained 8 spatial dimensions, which reduced accuracy only slightly, and adding more did not improve accuracy but slowed the model significantly.
+
+The resulting model is more than 20 times faster (11 minutes per epoch) than the GE-ViT equivariant to 4 rotations and achieves an accuracy of **83.96%**, surpassing the best-reported accuracy of **83.82%** achieved by the GE-ViT equivariant to 8 rotations, which was too computationally intensive for our hardware. Additionally, our model was trained for just 15 epochs, whereas the best GE-ViT required 300 epochs. Thus, we achieved better performance in 5% of the epochs while using a model approximately 40 times faster.
+
+Still, 90% of the computation time is due to operations in the GE-ViT. To test its importance, we replaced the model with a linear layer, significantly speeding up the model but achieving only a test accuracy of **80.42%**. Given that GE-CNNs alone can achieve test accuracies north of **87%** [Bekkers, E. (2019)](https://openreview.net/forum?id=H1gBhkBFDH), we believe it is worthwhile to explore the performance of these models when combined with an (equivariant) ViT.
 
 ## Concluding Remarks
-In this blog post, we conducted a thorough evaluation of existing methods while also proposing new approaches to achieve equivariance in pretrained models with minimal to no fine-tuning. Our findings highlight mean pooling of latent dimensions as the most reliable method, consistently delivering strong performance across all experiments. Notably, performance saw incremental gains with fine-tuning the last layer and further enhancements when fine-tuning the entire model. Importantly, this simple yet effective approach outperforms equivariant attention models without altering their original training paradigms.
+In this blogpost, we thoroughly evaluated existing methods and proposed new approaches to achieve equivariance in pretrained models. Our findings highlight mean pooling of latent dimensions as the most reliable method, consistently delivering strong performance across all experiments. We observed incremental performance gains by fine-tuning the last layer, with further enhancements when fine-tuning the entire model. This simple yet effective approach notably outperforms equivariant attention models.
 
-It's crucial to recognize that this approach only confers equivariance to global transformations. Additionally, since the pretrained models lacked translation equivariance, the final models remain non-translation equivariant, solely equivariant to the O(2) and/or SO(2) groups. However, applying these methods to CNNs, inherently translation equivariant, would yield equivariance to the E(2) and/or SE(2) groups. We advocate for researchers to explore these methods' efficacy when applied to CNNs and across diverse datasets. Additionally, we discuss possible future work in the [Appendix](##Appendix).
+It's important to note that this approach only confers equivariance to global transformations. Since the pretrained models lacked translation equivariance, the final models remain non-translation equivariant, achieving equivariance only to the O(2) and/or SO(2) groups. However, applying these methods to CNNs, which are inherently translation equivariant, would yield equivariance to the E(2) and/or SE(2) groups. We encourage researchers to explore the efficacy of these methods when applied to CNNs and across diverse datasets. Additionally, we discuss potential future work in the [Appendix](#Appendix).
 
-Further, we explored downsizing the image with (1) projecting patches and (2) downsizing with a GE-CNN. Both approaches significantly increase the speed of the models but are less accurate. We believe that with the right architecture and learning paradigm the second approach can become competitive with SOTA approaches as this is also the case for their non-equivariant counterparts for non-equivariant image classification ([Graham, B, et. al.](https://arxiv.org/abs/2104.01136)). Note that the first approach is again not translation invariant and although global invariant to rotations, on a local level only when rotating an entire patch.
+Further, we explored downsizing the image with (1) projecting patches and (2) downsizing with a GE-CNN. Both approaches significantly increase the speed of the models and the second approach improved the GE-ViT in terms of accuracy. We believe that with the right architecture and learning paradigm the second approach can become competitive with SOTA approaches as this is also the case for their non-equivariant counterparts for non-equivariant image classification ([Graham, B, et. al.](https://arxiv.org/abs/2104.01136)). Note that both approaches are not fully translation equivariant. For the second method, this is because of the aggressive max pooling reducing the spatial dimensions from 64 to 6.
 
 We firmly believe that true equivariant models possess the potential to achieve superior performance, requiring less data, particularly with ample computational resources. However, in scenarios where computational resources are limited for training, the post hoc methods presented here offer a viable solution. They can be directly applied to pretrained models, robustly enhancing performance by significant margins.
 
@@ -863,10 +866,10 @@ Colin Bot:
 Worked mostly on inspecting and visualizing the GE-ViT inner workings. Implemented code for most model interpretability figures and wrote the section on GE-VIT's equivariant positional embedding. 
 
 Jasper Eppink:
-Contributed mainly to the writing of the blogpost. Has written the introduction and the weaknesses. Also aided with thinking about the programming challenges and the novelties that we wanted to research. 
+Contributed mainly to the writing of the blogpost. Has written the introduction, the recap, and the weaknesses. Also aided with thinking about the programming challenges and the novelties that we wanted to research. Lastly, he was responsible for some visualizations regarding the effect of equivariance
 
 Clio Feng:
-Worked mostly on researching and proving the equivariant and invariant properties of the post hoc methods. Contributed to the overall writing of the blogpost and wrote the section on GE-ViT architecture. Implemented the code for training on MNIST and on a fraction of the dataset. 
+Worked mostly on investigating similar and background research of the post hoc method to show equivariant and invariant. Wrote the section on post hoc and GE-ViT architecture. Implemented the code for training on MNIST and on a fraction of the dataset. Contributed to the overall writing of the blogpost.  
 
 Floris Six Dijkstra:
 Came up with and implemented the method of downsizing the image with a GE-CNN.
