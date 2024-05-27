@@ -169,6 +169,14 @@ def run_experiments(args):
     accuracies.append((type(model).__name__, val_acc, test_acc))
     print(accuracies)
 
+    # normal mean pooling
+    set_seed(42)
+    model = get_non_equivariant_vit(args.model_path, device)
+    model_normal_mean_pool = NormalMeanPool(model)
+    val_acc = evaluate(model_normal_mean_pool, val_loader, device=device)
+    test_acc = test(model_normal_mean_pool, test_loader, device=device)
+    print(val_acc, test_acc)
+
     # mean pooling
     set_seed(42)
     model = get_non_equivariant_vit(args.model_path, device)

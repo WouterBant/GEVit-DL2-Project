@@ -159,3 +159,25 @@ class PostHocLearnedAggregation(PostHocEquivariant):
         combined_embeddings = self.aggregation_model(embeddings)
         logits = self.model.mlp_head(combined_embeddings)
         return logits
+    
+class NormalMeanPool(PostHocEquivariant):
+
+    def _forward(self, transforms, B, T):
+        embeddings = self.model.forward(transforms, output_cls=False)  # B*T, n_dim_repr
+        embeddings = embeddings.view(B, T, -1)  # B, T, n_dim_repr
+        return embeddings
+
+    def project_embeddings(self, embeddings):
+        """
+        The different methods just differently project the latent dimensions
+
+        Input:
+            embeddings - latent dimensions (B, T, n_dim)
+                B = number of elements in the batch
+                T = number of different transformations of the original input image
+                n_dim = the dimension of the latent dimension for a single input
+        Output:
+            logits (B, n_classes)
+        """
+        embeddings = embeddings.mean(dim=1)
+        return embeddings
