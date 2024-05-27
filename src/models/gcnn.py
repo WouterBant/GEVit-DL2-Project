@@ -1,24 +1,23 @@
 ## Standard libraries
-import math
 import os
+import numpy as np
+import math
+from PIL import Image
 from functools import partial
 
 ## Imports for plotting
 import matplotlib
 import matplotlib.pyplot as plt
-import numpy as np
 ## PyTorch
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.utils.data as data
+import torch.optim as optim
 ## Torchvision
 import torchvision
-from PIL import Image
-from torchvision import transforms
 from torchvision.datasets import MNIST
+from torchvision import transforms
 from torchvision.transforms.functional import hflip
-
 
 class GroupBase(torch.nn.Module):
 
@@ -907,6 +906,9 @@ class GroupEquivariantCNN(torch.nn.Module):
         
         ## YOUR CODE STARTS HERE ##
         # self.projection_layer = torch.nn.AdaptiveAvgPool3d((1,20,20))
+        self.projection_layer = torch.nn.AdaptiveMaxPool3d((1,6,6))
+
+        
         ## AND ENDS HERE ##
 
         # And a final linear layer for classification.
@@ -926,10 +928,8 @@ class GroupEquivariantCNN(torch.nn.Module):
             x = torch.nn.functional.relu(x)
         
         # to ensure equivariance, apply max pooling over group and spatial dims.
-        # x = self.projection_layer(x).squeeze(2)
-        x = x.mean(dim=-3)
-
-        #x = self.final_linear(x)
+        x = self.projection_layer(x).squeeze(2)
+        
         return x
 
 
