@@ -1,23 +1,24 @@
 ## Standard libraries
-import os
-import numpy as np
 import math
-from PIL import Image
+import os
 from functools import partial
 
 ## Imports for plotting
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 ## PyTorch
 import torch
 import torch.nn as nn
-import torch.utils.data as data
 import torch.optim as optim
+import torch.utils.data as data
 ## Torchvision
 import torchvision
-from torchvision.datasets import MNIST
+from PIL import Image
 from torchvision import transforms
+from torchvision.datasets import MNIST
 from torchvision.transforms.functional import hflip
+
 
 class GroupBase(torch.nn.Module):
 

@@ -1,91 +1,27 @@
 import sys
 sys.path.append("..")
+sys.path.append("../post_hoc_equivariance")
+
 import models
+from utils import CustomRotation, get_transforms, img_to_patch, set_seed
 from g_selfatt import utils
 import g_selfatt.groups as groups
-from datasets import MNIST_rot, PCam
+from datasets import PCam
 
 import torch
 import torch.nn as nn
 import torchvision.transforms as tvtf
-import torchvision.transforms.functional as TF
-from torch.optim.lr_scheduler import StepLR,LambdaLR
 
 import os
 import copy
 import math
 import wandb
-import random
 import argparse
 from tqdm import tqdm
 from torch.cuda.amp import GradScaler, autocast
 
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-class CustomRotation(object):
-    def __init__(self, angles):
-        self.angles = angles
-
-    def __call__(self, img):
-        angle = random.choice(self.angles)
-        return tvtf.functional.rotate(img, angle)
-
-
-def get_transforms(images, n_rotations=4, flips=True):
-    """ Returns all transformations of the input images """
-
-    B, C, H, W = images.shape
-    T = 2*n_rotations if flips else n_rotations  # number of transformations
-
-    # initialize empty transforms tensor
-    transforms = torch.empty(size=(B, T, C, H, W)) #.to(device)
-    transforms[:, 0,...] = images
-    idx = 1
-
-    # remember all orientations that need to be flipped
-    orientations = [images] if flips else []
-
-    # rotations
-    for i in range(1, n_rotations):
-        angle = i * (360 / n_rotations)
-        rotated_images = TF.rotate(images, angle)  # B, C, H, W
-        transforms[:, idx,...] = rotated_images
-        idx += 1
-
-        if flips:
-            orientations.append(rotated_images)
-
-    # flips
-    for transform in orientations:
-        flipped_image = TF.hflip(transform)
-        transforms[:, idx, ...] = flipped_image
-        idx += 1
-
-    return transforms.to(device)  # B, T, C, H, W
-
-
-def img_to_patch(x, patch_size, flatten_channels=True):
-    """
-    Args:
-        x: Tensor representing the image of shape [B, C, H, W]
-        patch_size: Number of pixels per dimension of the patches (integer)
-        flatten_channels: If True, the patches will be returned in a flattened format
-                           as a feature vector instead of a image grid.
-    """
-    B, C, H, W = x.shape
-    x = x.reshape(B, C, H // patch_size, patch_size, W // patch_size, patch_size)
-    x = x.permute(0, 2, 4, 1, 3, 5)  # [B, H', W', C, p_H, p_W]
-    x = x.flatten(1, 2)  # [B, H'*W', C, p_H, p_W]
-    if flatten_channels:
-        x = x.flatten(2, 4)  # [B, H'*W', C*p_H*p_W]
-    return x
-
-def set_seed(seed):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)  # if using CUDA
-    torch.backends.cudnn.deterministic = True  # if using CUDA
-    torch.backends.cudnn.benchmark = False  # if using CUDA, may improve performance but can lead to non-reproducible results
 
 class EquivariantViT(nn.Module):
     def __init__(self, patch_size=7, num_patches=16, num_channels=1, n_rotations=4, flips=False, n_embd=64, att_patch_size=None, num_classes=10):
@@ -151,7 +87,7 @@ class EquivariantViT(nn.Module):
         return x
 
 def main(args):
-    os.environ["WANDB_API_KEY"] = "26de9d19e20ea7e7f7352e5b36f139df8d145bc8"
+    # os.environ["WANDB_API_KEY"] = ""
     set_seed(42)
 
     data_mean = (0.701, 0.538, 0.692)
@@ -171,11 +107,11 @@ def main(args):
         ]
     )
 
-    train_set = PCam(root="../data", train=True, download=True, transform=transform_train, data_fraction=0.01)
-    validation_set = PCam(root="../data", train=False, valid=True, download=True, transform=transform_test, data_fraction=0.1)
+    train_set = PCam(root="../data", train=True, download=True, transform=transform_train, data_fraction=1)
+    validation_set = PCam(root="../data", train=False, valid=True, download=True, transform=transform_test, data_fraction=1)
     test_set = PCam(root="../data", train=False, download=True, transform=transform_test)
 
-    batch_size = 64 if (args.modern_vit) else 16
+    batch_size = 256 #64 #if (args.modern_vit) else 16
     train_loader = torch.utils.data.DataLoader(
         train_set,
         batch_size=batch_size,
@@ -196,11 +132,14 @@ def main(args):
         num_workers=8,
     )
 
-    wandb.init(
-        project="wouters_eq_vit",
-        group="rotmnist",
-        entity="ge_vit_DL2",
-    )
+    # wandb.init(
+    #     project="wouters_eq_vit",
+    #     group="rotmnist",
+    #     entity="ge_vit_DL2",
+    # )
+
+    max_steps = epochs = 50
+    warmup_epochs = 10.0
 
     if args.modern_vit:
         patch_size = args.patch_size
@@ -216,19 +155,29 @@ def main(args):
                 n_embd=128, 
                 att_patch_size=3).to(device)
     elif args.modern_vit_w_cnn:
+        kernel_size = 5
+        hidden_channels = 8
+        num_hidden = 8  # 12 doesnt work with 5 and 8
+        max_steps = epochs = 15
+        warmup_epochs = 50.0
+        # 392, 394 (used 6x6 pooling)
+        # wandb.log({"kernel_size": kernel_size})
+        # wandb.log({"num_hidden": num_hidden})  # default 8
+        # wandb.log({"hidden_channels": hidden_channels})
+
         gcnn = models.get_gcnn(order=4,
             in_channels=3,
-            out_channels=32,
-            kernel_size=5,
-            num_hidden=17,
-            hidden_channels=32)
+            out_channels=hidden_channels,
+            kernel_size=kernel_size,
+            num_hidden=num_hidden,
+            hidden_channels=hidden_channels)
         group_transformer = models.GroupTransformer(
                 group=groups.SE2(num_elements=4),
                 in_channels=gcnn.out_channels,
                 num_channels=20,
                 block_sizes=[2, 3],
-                expansion_per_block=1,
-                crop_per_layer=[2, 0, 2, 1, 1],
+                expansion_per_block=0, #1,
+                crop_per_layer=[1, 0, 0, 0, 0],  # the settings here work well
                 image_size=gcnn.output_dimensionality,
                 num_classes=2,
                 dropout_rate_after_maxpooling=0.0,
@@ -265,19 +214,15 @@ def main(args):
             whitening_scale=1.41421356,
         ).to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), 0.001)  # 0.001 works well here for floris model
-    max_steps = epochs = 50
+    optimizer = torch.optim.AdamW(model.parameters(), 0.001)  # 0.001 works well here for floris model
     max_steps *= len(train_loader.dataset) // batch_size
     lr_scheduler = utils.schedulers.linear_warmup_cosine_lr_scheduler(
-        optimizer, 10.0 / epochs, T_max=max_steps  # Perform linear warmup for 10 epochs.
+        optimizer, warmup_epochs / epochs, T_max=max_steps
     )
     scaler = GradScaler()
     criterion = torch.nn.CrossEntropyLoss()
     best_model = copy.deepcopy(model.state_dict())
     best_val_acc = 0
-
-    # epsilon = torch.tensor(0.1)
-    # smoothing = [epsilon, torch.tensor(1.0) - epsilon]
 
     for epoch in tqdm(range(epochs)):
         
@@ -285,15 +230,11 @@ def main(args):
         losses = []
         for inputs, labels in tqdm(train_loader):
             inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
-            # smoothed_labels = labels * smoothing[1] + (1 - labels) * smoothing[0]
 
             optimizer.zero_grad()
             with torch.set_grad_enabled(True):
                 with autocast():  # Sets autocast in the main thread. It handles mixed precision in the forward pass.
                     outputs = model(inputs)
-                    # print(model.gcnn)
-                    # print(outputs.shape)
-                    print(outputs[0:5,:])
                     loss = criterion(outputs, labels)
 
                 if loss.item() != loss.item():
@@ -310,7 +251,7 @@ def main(args):
 
             losses.append(loss.item())
 
-        wandb.log({"loss_train":sum(losses)/len(losses)}, step=epoch+1)
+        # wandb.log({"loss_train":sum(losses)/len(losses)}, step=epoch+1)
 
         # Validate on the validation set
         # Initialize counters for TP, TN, FP, FN
@@ -350,42 +291,43 @@ def main(args):
         recall = 100 * TP / (TP + FN) if (TP + FN) > 0 else 0
 
         # Log the metrics to wandb
-        wandb.log({
-            "validation_accuracy": accuracy,
-            "TP_percentage": TP_percentage,
-            "TN_percentage": TN_percentage,
-            "FP_percentage": FP_percentage,
-            "FN_percentage": FN_percentage,
-            "precision": precision,
-            "recall": recall
-        }, step=epoch + 1)
+        # wandb.log({
+        #     "validation_accuracy": accuracy,
+        #     "TP_percentage": TP_percentage,
+        #     "TN_percentage": TN_percentage,
+        #     "FP_percentage": FP_percentage,
+        #     "FN_percentage": FN_percentage,
+        #     "precision": precision,
+        #     "recall": recall
+        # }, step=epoch + 1)
 
         # Log the accuracy to wandb
-        wandb.log({"validation_accuracy": accuracy}, step=epoch + 1)
+        # wandb.log({"validation_accuracy": accuracy}, step=epoch + 1)
 
         # Optionally log TP, TN, FP, FN to wandb
 
-    wandb.run.summary["best_validation_accuracy"] = best_val_acc
+    # wandb.run.summary["best_validation_accuracy"] = best_val_acc
+
+    model.load_state_dict(best_model)    
 
     # Test on the test set
-    # model.eval()  # Set the model to evaluation mode
-    # correct = 0
-    # total = 0
-    # with torch.no_grad():  # Disable gradient calculation during inference
-    #     for inputs, labels in test_loader:
-    #         inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
-    #         outputs = model(inputs)
-    #         _, predicted = torch.max(outputs.data, 1)
-    #         total += labels.size(0)
-    #         correct += (predicted == labels).sum().item()
-    # test_acc = 100 * correct / total
+    model.eval()  # Set the model to evaluation mode
+    correct = 0
+    total = 0
+    with torch.no_grad():  # Disable gradient calculation during inference
+        for inputs, labels in test_loader:
+            inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    test_acc = 100 * correct / total
     
     # wandb.run.summary["test_acc"] = test_acc
 
-    # save model and log it
-    model.load_state_dict(best_model)
-    torch.save(model.state_dict(), "saved/modern_eq_vit.pt")
-    torch.save(model.state_dict(), os.path.join(wandb.run.dir, "modern_eq_vit.pt"))
+    
+    # torch.save(model.state_dict(), "saved/modern_eq_vit.pt")
+    # torch.save(model.state_dict(), os.path.join(wandb.run.dir, "modern_eq_vit.pt"))
 
 
 def parse_args():

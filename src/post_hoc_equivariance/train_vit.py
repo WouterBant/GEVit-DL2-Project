@@ -1,61 +1,18 @@
 import sys
+
 sys.path.append('..')
-from g_selfatt.utils import num_params
-from datasets import MNIST_rot, PCam
+import argparse
+import copy
 
 import torch
 import torch.nn as nn
 from torchvision import transforms
-from torch.optim.lr_scheduler import StepLR,LambdaLR
+from tqdm import tqdm
+from utils import CustomRotation, img_to_patch, linear_warmup_cosine_lr_scheduler
 
-import copy
-import random
-import math
-import argparse
+from datasets import MNIST_rot, PCam
+from g_selfatt.utils import num_params
 
-
-def linear_warmup_cosine_lr_scheduler(
-    optimizer,
-    warmup_time_ratio: float,
-    T_max: int,
-) -> torch.optim.lr_scheduler:
-    """
-    Creates a cosine learning rate scheduler with a linear warmup time determined by warmup_time_ratio.
-    The warm_up increases linearly the learning rate from zero up to the defined learning rate.
-
-    Args:
-        warmup_time_ratio: Ratio in normalized percentage, e.g., 10% = 0.1, of the total number of iterations (T_max)
-        T_max: Number of iterations
-    """
-    T_warmup = int(T_max * warmup_time_ratio)
-
-    def lr_lambda(epoch):
-        # linear warm up
-        if epoch < T_warmup:
-            return epoch / T_warmup
-        else:
-            progress_0_1 = (epoch - T_warmup) / (T_max - T_warmup)
-            cosine_decay = 0.5 * (1 + math.cos(math.pi * progress_0_1))
-            return cosine_decay
-
-    return LambdaLR(optimizer, lr_lambda=lr_lambda)
-
-# https://lightning.ai/docs/pytorch/stable/notebooks/course_UvA-DL/11-vision-transformer.html
-def img_to_patch(x, patch_size, flatten_channels=True):
-    """
-    Args:
-        x: Tensor representing the image of shape [B, C, H, W]
-        patch_size: Number of pixels per dimension of the patches (integer)
-        flatten_channels: If True, the patches will be returned in a flattened format
-                           as a feature vector instead of a image grid.
-    """
-    B, C, H, W = x.shape
-    x = x.reshape(B, C, H // patch_size, patch_size, W // patch_size, patch_size)
-    x = x.permute(0, 2, 4, 1, 3, 5)  # [B, H', W', C, p_H, p_W]
-    x = x.flatten(1, 2)  # [B, H'*W', C, p_H, p_W]
-    if flatten_channels:
-        x = x.flatten(2, 4)  # [B, H'*W', C*p_H*p_W]
-    return x
 
 class AttentionBlock(nn.Module):
     def __init__(self, embed_dim, hidden_dim, num_heads, dropout=0.0):
@@ -155,14 +112,6 @@ class VisionTransformer(nn.Module):
         out = self.mlp_head(cls)
         return out
 
-class CustomRotation(object):
-    def __init__(self, angles):
-        self.angles = angles
-
-    def __call__(self, img):
-        angle = random.choice(self.angles)
-        return transforms.functional.rotate(img, angle)
-
 def main(args):
 
     if args.rotmnist:
@@ -258,7 +207,7 @@ def main(args):
     best_val_acc = 0
 
     n_epochs = 500 if args.rotmnist else 50  # pcam large
-    for epoch in range(n_epochs):
+    for epoch in tqdm(range(n_epochs)):
         model.train()
         losses = []
         for inputs, labels in train_loader:
