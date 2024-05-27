@@ -277,23 +277,26 @@ In the first experiment, we trained and evaluated on rotation MNIST as done in [
 </tbody>
 </table>
 
-In the table below we show the results of a normal ViT and one where we used the common approach of test time augmentation, where we use mean pooling over the logits over different image transformations. Note that these transformations are the same for our post hoc methods. We show these numbers for all experiments as the idea is similar, however finetuning the last layer or entire model doesn't make sense when merely aggregating the ouputs of the model.
+In the table below we show the results of a normal ViT and one where we used the common approach of test time augmentation, where we use mean pooling over the logits over different image transformations. Note that these transformations are the same for our post hoc methods. We show these numbers for all experiments as the idea is similar, however finetuning the last layer or entire model doesn't make sense when merely aggregating the model's outputs.
 
-<table align="center">
+<table  align="center">
 <thead>
 <tr>
-<th align="center">Model</th>
-<th align="center">Best Reported Test Accuracy</th>
+<th  align="center">Model</th>
+<th  align="center">Validation Accuracy</th>
+<th  align="center">Test Accuracy</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center">GSA - Nets</td>
-<td align="center">97.97</td>
+<td  align="center">Normal ViT</td>
+<td  align="center">97.55</td>
+<td  align="center">97.23</td>
 </tr>
 <tr>
-<td align="center">GE-ViT</td>
-<td align="center">98.01</td>
+<td  align="center">Normal ViT + TTA</td>
+<td  align="center">97.90</td>
+<td  align="center">98.09</td>
 </tr>
 </tbody>
 </table>
@@ -390,6 +393,8 @@ The table above presents interesting results on many accounts. Firstly, except f
 Second, as anticipated, fine-tuning the last layer generally yields better results, with further enhancements observed when fine-tuning the entire model. Notably, several models surpass the best-reported baselines from GE-ViT, even with only the final layer fine-tuned. Moreover, all models employing aggregation without additional parameters outperform the baselines when fine-tuning the entire model. This indicates that superior results can be achieved without inherently equivariant models, highlighting the significance of post hoc augmentations in this experiment.
 
 However, we observed that in this experiment, learning to score the embeddings or learning to aggregate the embeddings with multi-head attention led to overfitting, resulting in decreased validation and test accuracies.
+
+Finally, when comparing the results of TTA with mean pooling we see that our methods that don't learn to aggregate the embeddings are comparable in terms of performance when we don't fine-tune, however, with fine-tuning these methods are superior.
  
 #### 2. Training on the full standard MNIST dataset and evaluating on the full rotation MNIST dataset
 One of the advantages of purely equivariant models is that the training data can be in different orientations than the test data, as long as the transformations between the training and testing examples are within the group the model is equivariant to. This is typically not the case for non-equivariant models. Therefore, we now test how well post hoc methods can improve the performance of non-equivariant models.
@@ -519,6 +524,8 @@ One of the advantages of purely equivariant models is that the training data can
 The non-equivariant model trained on MNIST achieved an accuracy of approximately **29%** on the rotation MNIST dataset. While proficient at predicting digits in their normal orientation, the model struggles with heavily rotated images. The most effective approach without learning involves selecting the transformation yielding the highest probability for a specific class, resulting in a test accuracy of **49%**. This can be attributed to the model's uncertainty regarding unseen transformations during training, yet it assigns high probability to digits close to their original orientation.
 
 Interestingly, models that require learning perform much better in this experiment. Aggregating the embeddings with multi-head attention even leads to an accuracy of about **92%** while keeping all parameters of the original model fixed. However, similar to the previous results, when fine-tuning the entire model, averaging or summing the embeddings proves more effective.
+
+Furthermore, mean pooling of the latent dimensions works in this experiment much better than averaging the logits as is done with TTA. This shows that beyond the ability to fine-tune the model upon incorporating inductive biases, our approach is superior when limited data is available.
 
 Another interesting insight is the behavior of the MostProbable model with input rotated to resemble another number (e.g., a vertically flipped 6 resembling a 9). It performs well in these edge cases, often assigning a higher probability to the correct class. One such instance is visualized in Figure 9.
 
@@ -660,7 +667,7 @@ We also evaluated the performance of GE-ViT when trained on a reduced dataset co
     </tbody>
 </table>
 
-Consistent with our findings on the full rotation MNIST dataset, we found that learning to aggregate embeddings resulted in overfitting. In contrast, other methods consistently enhanced performance. Fine-tuning led to significant improvements, and both mean pooling and summing of latent dimensions achieved the highest accuracies. Notably, our non-equivariant ViT already outperformed the GE-ViT. Throughout our experiments, the GE-ViT showed high sensitivity to minor hyperparameter changes. We hypothesize that optimizing these hyperparameters could potentially yield higher accuracy. However, due to computational constraints, we did not explore this further.
+Consistent with our findings on the full rotation MNIST dataset, we found that learning to aggregate embeddings resulted in overfitting. In contrast, other methods consistently enhanced performance. Also, the performance of TTA is similar when not fine-tuning but also here fine-tuning led to significant improvements, and both mean pooling and summing of latent dimensions achieved the highest accuracies. Notably, our non-equivariant ViT already outperformed the GE-ViT. Throughout our experiments, the GE-ViT showed high sensitivity to minor hyperparameter changes. We hypothesize that optimizing these hyperparameters could potentially yield higher accuracy. However, due to computational constraints, we did not explore this further.
 
 #### 4. Evaluating a pretrained RESNET-50 on Patch Camelyon
 Until now, our analysis has been limited to models trained exclusively on either MNIST or rotation MNIST. However, it's worth noting that the post hoc methods discussed can be applied to pretrained models trained on various datasets. To validate the robustness of our findings, we use a [trained RESNET-50 model](https://huggingface.co/1aurent/resnet50.tiatoolbox-pcam) provided by [TIAToolbox](https://tia-toolbox.readthedocs.io/en/latest/?badge=latest) as we found it challenging to locate well-performing models elsewhere.
@@ -839,9 +846,9 @@ The resulting model is more than 20 times faster (11 minutes per epoch) than the
 Still, 90% of the computation time is due to operations in the GE-ViT. To test its importance, we replaced the model with a linear layer, significantly speeding up the model but achieving only a test accuracy of **80.42%**. Given that G-CNNs alone can achieve test accuracies north of **87%** ([Bekkers, E. (2019)](https://openreview.net/forum?id=H1gBhkBFDH)), we believe it is worthwhile to explore the performance of these models when combined with an (equivariant) ViT.
 
 ## Concluding Remarks
-In this blog post, we thoroughly evaluated existing equivariant methods such as the GE-ViT and proposed new approaches to achieve equivariance in pretrained models. Our findings highlight mean pooling of latent dimensions as the most reliable method, consistently delivering strong performance across all experiments. This may be attributed to the minimal divergence between the pretrained and equivariant models compared to other post-hoc methods. We observed incremental performance gains by fine-tuning the last layer, with further enhancements when fine-tuning the entire model. This simple yet effective approach notably outperforms equivariant attention models in terms of accuracy, while being significantly less computationally expensive.
+In this blog post, we thoroughly evaluated existing equivariant methods such as the GE-ViT and proposed new approaches to achieve equivariance in pretrained models. Our findings highlight mean pooling of latent dimensions as the most reliable method, consistently delivering strong performance across all experiments. We observed significant performance gains by fine-tuning the last layer, with further enhancements when fine-tuning the entire model. Most approaches outperform the well-known method of TTA with mean pooling after fine-tuning the final layer and/or the entire model. This simple yet effective approach notably outperforms equivariant attention models in terms of accuracy, while being significantly less computationally expensive.
 
-It's crucial to note that this approach only confers equivariance to global transformations. As the pretrained models lacked translation equivariance, the final models retain non-translation equivariance, exhibiting unique equivariance only to the O(2) or SO(2) groups. However, applying these methods to inherently translation-equivariant CNNs would yield unique equivariance to the E(2) or SE(2) groups. We encourage researchers to explore the effectiveness of these methods when applied to CNNs and diverse datasets. Additionally, we discuss potential future avenues in the [Appendix](#Appendix).
+It's crucial to note that this approach only confers equivariance to global transformations. As the pretrained models lacked translation equivariance, the final models are also not translation equivariant, exhibiting unique equivariance only to the O(2) or SO(2) groups. However, applying these methods to inherently translation-equivariant CNNs would yield unique equivariance to the E(2) or SE(2) groups. We encourage researchers to explore the effectiveness of these methods when applied to CNNs and diverse datasets. Additionally, we discuss potential future research in the [Appendix](#Appendix).
 
 Furthermore, we investigated downsizing the image via (1) patch projection and (2) downsizing with a G-CNN. Both approaches significantly increase the speed of the models and the second approach improved the GE-ViT in terms of accuracy. We believe that with the right architecture and learning paradigm the second approach can become competitive with SOTA approaches as this is also the case for their non-equivariant counterparts for non-equivariant image classification ([Graham, B, et. al.](https://arxiv.org/abs/2104.01136)). Notably, both approaches lack full translation equivariance. For the second method, this is because of the aggressive max pooling reducing the spatial dimensions from 64 to 6.
 
@@ -949,8 +956,9 @@ The ViT is similar to the original Transformer architecture's encoder ["An Image
 
 This architecture is not equivariant to translations and rotations as each translation or rotation results in a completely new patch embedding. On top of that, the positional encodings are not constrained to be equivariant to different group transformations of the input.
 
+### Future Research
 
-### Post Hoc Equivariant models
+#### Post Hoc Equivariant models
 
 | Pros                         | Cons                           |
 |-------------------------------|---------------------------------|
@@ -967,3 +975,12 @@ To address these cons, future work could explore the following ideas:
 - *Slows down model during inference*: although all transformations are processed simultaneously, one could explore the possibility of predicting the useful transformations with a small neural network to save computations spent on uninformative/misleading transformations.
 
 *Base model wastes parameters to learn equivariant properties*: the only ways to solve this are either by using an equivariant network, or similarly transforming all inputs. The former gives the most guarantees, but are parameters a more important metric than training/inference time?
+
+#### Speeding up ViT
+While the performance of GE-ViT is enhanced, the way the G-CNN reduces the spatial dimensions of the image presents two key limitations. First, by aggregating over the group invariantly before feeding inputs to GE-ViT, we prevent GE-ViT from distinguishing between different orientations of the original input, even though it subsequently lifts the input to the group again. Second, the aggressive reduction of spatial dimensions from 64 to 6 through max-pooling results in a loss of translation equivariance.
+
+Further research could address these limitations by:
+- Reducing the spatial dimensions naturally via group convolutions.
+- Providing the lifted feature maps directly to GE-ViT, avoiding invariant aggregation over the group before inputting to GE-ViT. This approach allows GE-ViT to bypass lifting self-attention and directly apply group self-attention to feature maps from different groups
+
+Incorporating both would result in a hybrid architecture uniquely equivariant to either the E(2) or SE(2) group.
