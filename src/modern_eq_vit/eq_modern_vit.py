@@ -171,11 +171,11 @@ def main(args):
         ]
     )
 
-    train_set = PCam(root="../data", train=True, download=True, transform=transform_train, data_fraction=0.01)
-    validation_set = PCam(root="../data", train=False, valid=True, download=True, transform=transform_test, data_fraction=0.1)
+    train_set = PCam(root="../data", train=True, download=True, transform=transform_train, data_fraction=1)
+    validation_set = PCam(root="../data", train=False, valid=True, download=True, transform=transform_test, data_fraction=1)
     test_set = PCam(root="../data", train=False, download=True, transform=transform_test)
 
-    batch_size = 64 if (args.modern_vit) else 16
+    batch_size = 256 #64 #if (args.modern_vit) else 16
     train_loader = torch.utils.data.DataLoader(
         train_set,
         batch_size=batch_size,
@@ -216,19 +216,27 @@ def main(args):
                 n_embd=128, 
                 att_patch_size=3).to(device)
     elif args.modern_vit_w_cnn:
+        kernel_size = 5
+        hidden_channels = 8
+        num_hidden = 8  # 12 doesnt work with 5 and 8
+        # 392, 394 (used 6x6 pooling)
+        wandb.log({"kernel_size": kernel_size})
+        wandb.log({"num_hidden": num_hidden})  # default 8
+        wandb.log({"hidden_channels": hidden_channels})
+
         gcnn = models.get_gcnn(order=4,
             in_channels=3,
-            out_channels=32,
-            kernel_size=5,
-            num_hidden=17,
-            hidden_channels=32)
+            out_channels=hidden_channels,  # todo 32 works well
+            kernel_size=kernel_size,
+            num_hidden=num_hidden,  # todo 17 works well
+            hidden_channels=hidden_channels)  # todo 32 works well
         group_transformer = models.GroupTransformer(
                 group=groups.SE2(num_elements=4),
                 in_channels=gcnn.out_channels,
                 num_channels=20,
                 block_sizes=[2, 3],
-                expansion_per_block=1,
-                crop_per_layer=[2, 0, 2, 1, 1],
+                expansion_per_block=0, #1,
+                crop_per_layer=[1, 0, 0, 0, 0],  # the settings here work well
                 image_size=gcnn.output_dimensionality,
                 num_classes=2,
                 dropout_rate_after_maxpooling=0.0,
@@ -265,11 +273,11 @@ def main(args):
             whitening_scale=1.41421356,
         ).to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), 0.001)  # 0.001 works well here for floris model
-    max_steps = epochs = 50
+    optimizer = torch.optim.AdamW(model.parameters(), 0.001)  # 0.001 works well here for floris model
+    max_steps = epochs = 15  # TODO was 50
     max_steps *= len(train_loader.dataset) // batch_size
-    lr_scheduler = utils.schedulers.linear_warmup_cosine_lr_scheduler(
-        optimizer, 10.0 / epochs, T_max=max_steps  # Perform linear warmup for 10 epochs.
+    lr_scheduler = utils.schedulers.linear_warmup_cosine_lr_scheduler(  # TODO was 10
+        optimizer, 5.0 / epochs, T_max=max_steps  # Perform linear warmup for 10 epochs.
     )
     scaler = GradScaler()
     criterion = torch.nn.CrossEntropyLoss()
@@ -370,17 +378,17 @@ def main(args):
     # Test on the test set
     model.eval()  # Set the model to evaluation mode
     correct = 0
-    # total = 0
-    # with torch.no_grad():  # Disable gradient calculation during inference
-    #     for inputs, labels in test_loader:
-    #         inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
-    #         outputs = model(inputs)
-    #         _, predicted = torch.max(outputs.data, 1)
-    #         total += labels.size(0)
-    #         correct += (predicted == labels).sum().item()
-    # test_acc = 100 * correct / total
+    total = 0
+    with torch.no_grad():  # Disable gradient calculation during inference
+        for inputs, labels in test_loader:
+            inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    test_acc = 100 * correct / total
     
-    # wandb.run.summary["test_acc"] = test_acc
+    wandb.run.summary["test_acc"] = test_acc
 
     # save model and log it
     model.load_state_dict(best_model)

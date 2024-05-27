@@ -906,6 +906,9 @@ class GroupEquivariantCNN(torch.nn.Module):
         
         ## YOUR CODE STARTS HERE ##
         # self.projection_layer = torch.nn.AdaptiveAvgPool3d((1,20,20))
+        self.projection_layer = torch.nn.AdaptiveMaxPool3d((1,6,6))
+
+        
         ## AND ENDS HERE ##
 
         # And a final linear layer for classification.
@@ -925,9 +928,9 @@ class GroupEquivariantCNN(torch.nn.Module):
             x = torch.nn.functional.relu(x)
         
         # to ensure equivariance, apply max pooling over group and spatial dims.
-        # x = self.projection_layer(x).squeeze(2)
-        x = x.mean(dim=-3)
-
+        x = self.projection_layer(x).squeeze(2)
+        # x = x.mean(dim=-3)
+        
         #x = self.final_linear(x)
         return x
 

@@ -5,7 +5,7 @@ try:
 except ModuleNotFoundError:
     def autocast():
         return lambda f: f
-
+import time
 class Hybrid(nn.Module):
     def __init__(self, gcnn, group_transformer):
         super().__init__()
@@ -14,8 +14,14 @@ class Hybrid(nn.Module):
     
     @autocast() # required for mixed-precision when training on multiple GPUs.
     def forward(self, x):
+        a = time.time()
         out = self.gcnn(x)  # B, C, H, W
+        b = time.time()
+        print(b-a)
         print(out.shape)
+        a = time.time()
         out = self.group_transformer(out)
+        b = time.time()
+        print("1", b-a)
         # print("out: ", out.shape)
         return out
