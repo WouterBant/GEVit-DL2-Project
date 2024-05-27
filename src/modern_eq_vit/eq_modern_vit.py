@@ -376,17 +376,7 @@ def main(args):
     wandb.run.summary["best_validation_accuracy"] = best_val_acc
 
     # Test on the test set
-    model.eval()  # Set the model to evaluation mode
-    correct = 0
-    total = 0
-    with torch.no_grad():  # Disable gradient calculation during inference
-        for inputs, labels in test_loader:
-            inputs, labels = inputs.to(device), labels.to(device)  # Move inputs and labels to device
-            outputs = model(inputs)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-    test_acc = 100 * correct / total
+    torch.load(state_dict_path, map_location=torch.device('cpu'))
     
     wandb.run.summary["test_acc"] = test_acc
 

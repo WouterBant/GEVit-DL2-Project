@@ -17,11 +17,7 @@ class Hybrid(nn.Module):
         a = time.time()
         out = self.gcnn(x)  # B, C, H, W
         b = time.time()
-        print(b-a)
-        print(out.shape)
         a = time.time()
         out = self.group_transformer(out)
         b = time.time()
-        print("1", b-a)
-        # print("out: ", out.shape)
         return out
