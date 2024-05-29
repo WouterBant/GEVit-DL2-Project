@@ -286,7 +286,7 @@ We conducted the following experiments:
 
 For the experiments on MNIST or rotation MNIST, we rotate the input 16 times. For Patch Camelyon we rotate 4 times and additionally flip these transformations (providing 8 different inputs to the model). For fine-tuning, we use the same learning rate as training the normal ViT to ensure that improvements are solely from the proposed method and not from fine-tuning the pretrained model.
 
-> **NOTE:** Links to all relevant code and markdowns for reproducing our results are provided in the [Experimental Details](#Experimental Details) section.
+> **NOTE:** Links to all relevant code and markdowns for reproducing our results are provided in the [Experimental Details](#experimental-details) section.
 
 #### 1. Training and evaluating on the full rotation MNIST dataset
 In the first experiment, we trained and evaluated on rotation MNIST as done in [GE-ViT](https://arxiv.org/abs/2306.06722) and [GSA-Nets](https://arxiv.org/abs/2010.00977). Below are the reported test accuracies of the best models, obtained with a patch size of 5 and 12 rotations.
