@@ -140,7 +140,7 @@ Equivariant networks benefit from weight sharing and faster generalization, but 
 
 In addition to strengths, we also identified several weaknesses in their approach and methods:
 
-1. The original paper claims that the group equivariant vision transformer significantly outperforms non-equivariant self-attention networks. We question this assertion and suggest that retraining a Vision Transformer to be rotation equivariant ad-hoc could significantly enhance performance.
+1. The original paper claims that the group equivariant vision transformer significantly outperforms non-equivariant self-attention networks. We question this assertion and suggest that retraining a Vision Transformer to be rotation equivariant post-hoc could significantly enhance performance.
 
 2. A significant weakness of the original GE-VIT lies in its training and inference time. The authors mention using the well-known ViT, which is inaccurate. The original ViT and the GSA-net paper were concurrently published in the same journal. The GE-VIT authors utilized the codebase from GSA-nets, which applies attention to each pixel instead of pixel patches, diverging from the standard vision transformer. This results in slow training and inference times due to the pixel-wise attention's computational demands.
 
