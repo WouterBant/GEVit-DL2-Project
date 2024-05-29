@@ -178,7 +178,7 @@ To transform a pre-trained non-equivariant model $M$ into an equivariant model $
 
 In our investigation of image classification, we utilize the $C_4$ (90° rotations) and $D_4$ groups (90° rotations and horizontal flips). The reason we chose them is that these groups consistently outperform non-equivariant networks on the CIFAR-10 dataset, as evidenced by [Cohen and Welling 2016](https://arxiv.org/abs/1602.07576).
 
-The $C_4$ group comprises { $e$, $r$, $r^2$, $r^3$}, where $e$ denotes the identity and $r$ represents a 90° rotation.
+The $C_4$ group comprises {$e$, $r$, $r^2$, $r^3$}, where $e$ denotes the identity and $r$ represents a 90° rotation.
 
 Given an image set $X$, the group action of $G$ is applied on $X$ as $\Gamma X$: $G \times X \rightarrow X$. We denote $\Gamma X(g,x)$ as $gx$. A model $M$: $X \rightarrow Y$ is considered equivariant to $G$ under the group action of $G$ on $X$ and $Y$ if $M(gx) = g(M(x))$ for all $g \in G$ and $x \in X$. This implies that any group transformation $g$ applied to the input $\Gamma X(g,x)$ should result in an equivalent transformation of the output $\Gamma Y(gM(x))$.
 
@@ -192,7 +192,7 @@ $$ M_G(gx) = gM_G(x) $$
 
 for all $g \in G$.
 
-To demonstrate the equivariant of our method, we visualize the pipeline in Figure 9. It illustrates how post hoc equivariance works. The input image undergoes various transformations to achieve equivariance (in this case, 90-degree rotations). Each transformed image is processed by the same model, which generates latent embeddings or class probabilities. These embeddings (or probabilities) are then aggregated in an invariant way. Note that the model's latent representations are equivariant to the group (because of the lifting to the group) until they are aggregated, which is done using an invariant operation.
+To demonstrate the equivariant of the method, we visualize the pipeline for this method in Figure 9. It illustrates how post hoc equivariance works. The input image undergoes various transformations to achieve equivariance (in this case, 90-degree rotations). Each transformed image is processed by the same model, which generates latent embeddings or class probabilities. These embeddings (or probabilities) are then aggregated in an invariant way. Note that the model's latent representations are equivariant to the group (because of the lifting to the group) until they are aggregated, which is done using an invariant operation.
 
 <table align="center">
   <tr align="center">
@@ -224,7 +224,7 @@ This method resembles [Basu et al. 2022](https://arxiv.org/abs/2210.06475), thou
 
 **Max Pooling**: Selecting the highest logit for each element within the vector across all action groups $G$.
 
-$$ (M_G(x))i = \max_{g \in G}({M(gx)})_i $$
+$$ [M_G(x)]_{i} = \max_{g \in G}({M(gx)})_i $$
 
 **Sum Pooling**: Summing the logits from all action groups $G$.
 
@@ -250,22 +250,20 @@ Let $λ(gx)$ denote the significance weight assigned to feature $M(gx)$ for $g \
 
 $$ M_G(x) = \sum_{g \in G}^{|G|}λ(gx)M(gx) \frac{1}{\sum_{g \in G}{λ(gx)}}$$
 
-**Learned Attention Aggregation**: Aggregating the embeddings using a transformer, then passing the combined embedding through the model's MLP head to obtain the final logits. 
+**Learned Attention Aggregation**: Aggregating with multi-headed attention. 
 
-$$ M_G(x) = \text{Mlp}(\text{Transformer}(M(gx))), g\in G $$
+$$ M_G(x) = \text{MHA}(\cup_{g \in G}M(gx)), g\in G $$
 
-Here, the 8 embeddings are combined into a single tensor for further processing. This tensor is then fed into a transformer-like structure with multiple attention blocks, utilizing multi-head attention and layer normalization. A CLS token aggregates information from all 8 embeddings.
+Here, each latent embedding, $ M(gx) $, is provided as a separate input to a multi-headed attention (MHA) block. MHA is permutation invariant for constant positional encoding, thus we can invariantly aggregate the latent embeddings when we provide no positional encoding and take the final embedding of the CLS vector as the aggregated embedding. This is exactly what we did and, like in most of our other approaches, this CLS vector is now projected to logits with the original last layer.
 
-The multi-head attention mechanism computes interactions among all tokens, including the CLS token and the stacked embeddings. It adapts its focus based on input transformations, ensuring predictability when the input changes.
-
-To demonstrate the equivariance of the mechanism, we visualize the transformer block's behavior when the input transforms. In Figure 10, for an image rotated and flipped in 8 ways, we observe how the CLS token self-attends across transformer layers, which we notice how the CLS token attends to different columns, representing different transformed input embeddings, for each transformation.
+To demonstrate the equivariance of this mechanism, we visualize the behavior of attention inside the model when the input transforms. In Figure 10, for an image rotated and flipped in 8 ways, we observe how the CLS token attends across MHA blocks. Notice how the CLS token attends to different columns, representing different transformed input embeddings, for each transformation.
 
 <table align="center">
   <tr align="center">
       <td><img src="figures/PostHocLearnedAggregation_attention_visualisation.png" width=600></td>
   </tr>
   <tr align="left">
-    <td colspan=2><b>Figure 10.</b> Self-attention weights in the LearnedAggregation post hoc equivariant ViT for input transformed by various group actions.</td>
+    <td colspan=2><b>Figure 10.</b> Self-attention weights in the Learned Attention Aggregation for input transformed by various group actions.</td>
   </tr>
 </table>
 
@@ -306,7 +304,7 @@ In the first experiment, we trained and evaluated on rotation MNIST as done in [
 </tbody>
 </table>
 
-In the table below we show the results of a normal ViT and one where we used the common approach of test time augmentation, where we use mean pooling over the logits over different image transformations. Note that these transformations are the same for our post hoc methods. We show these numbers for all experiments as the idea is similar, however finetuning the last layer or entire model doesn't make sense when merely aggregating the model's outputs.
+In the table below we show the results of a normal ViT and one where we used the common approach of test time augmentation, where we use mean pooling over the logits over different image transformations. Note that these transformations are the same for our post hoc methods. We show these numbers for all experiments as the idea is similar, however fine-tuning the last layer or entire model doesn't make sense when merely aggregating the model's outputs.
 
 <table  align="center">
 <thead>
@@ -870,9 +868,9 @@ In the previous section, we discussed the limitations of using patches. As an al
 
 We then opted for pooling. Initially, we tried mean pooling, which also yielded poor results. Surprisingly, reducing the spatial dimensions using eight consecutive convolutions with a 5x5 kernel, followed by reducing the resulting 64 spatial dimensions to only 6 with pooling worked best. More convolutions and retaining more spatial dimensions with pooling both made the optimization process harder. The G-CNN output contained 8 channels, which reduced accuracy only slightly, and adding more channels did not improve accuracy but slowed the model significantly.
 
-The resulting model is more than 20 times faster (11 minutes per epoch) than the GE-ViT equivariant to 4 rotations and achieves an accuracy of **83.96%**, surpassing the best-reported accuracy of **83.82%** achieved by the GE-ViT equivariant to 8 rotations, which was too computationally intensive for our hardware. Additionally, our model was trained for just 15 epochs, whereas the best GE-ViT required 300 epochs. Thus, we achieved better performance in 5% of the epochs while using a model approximately 40 times faster.
+The resulting model is more than 20 times faster (11 minutes per epoch) than the GE-ViT equivariant to 4 rotations and achieves a test accuracy of **83.96%**, surpassing the best-reported accuracy of **83.82%** achieved by the GE-ViT equivariant to 8 rotations, which was too computationally intensive for our hardware. Additionally, our model was trained for just 15 epochs, whereas the best GE-ViT required 300 epochs. Thus, we achieved better performance in 5% of the epochs while using a model approximately 40 times faster. Additionally, when we fine-tuned for 2 more epochs, our model attained a test accuracy of **84.62%**. We believe that longer training with a lower learning rate and lower batch size can significantly boost performance of our model.
 
-Still, 90% of the computation time is due to operations in the GE-ViT. To test its importance, we replaced the model with a linear layer, significantly speeding up the model but achieving only a test accuracy of **80.42%**. Given that G-CNNs alone can achieve test accuracies north of **87%** ([Bekkers, E. (2019)](https://openreview.net/forum?id=H1gBhkBFDH)), we believe it is worthwhile to explore the performance of these models when combined with an (equivariant) ViT.
+Still, 90% of the computation time is due to operations in the GE-ViT. To test its importance, we replaced the model with a linear layer, significantly speeding up the model but achieving only a test accuracy of **80.42%**. Given that G-CNNs alone can achieve test accuracies north of **87%** ([Bekkers, E. (2019)](https://openreview.net/forum?id=H1gBhkBFDH)), we believe it is worthwhile to further explore the performance of these models when combined with an (equivariant) ViT.
 
 ## Concluding Remarks
 In this blog post, we thoroughly evaluated existing equivariant methods such as the GE-ViT, and proposed new approaches to achieve equivariance in pretrained models. Our findings highlight mean pooling of latent dimensions as the most reliable method, consistently delivering strong performance across all experiments. We observed significant performance gains by fine-tuning the last layer, with further enhancements when fine-tuning the entire model. Most approaches outperform the well-known method of TTA with mean pooling after fine-tuning the final layer and/or the entire model. This simple yet effective approach notably outperforms equivariant attention models in terms of accuracy, while being significantly less computationally expensive.
@@ -1026,7 +1024,7 @@ Formally, the attention mechanism maps a query and a set of key-value pairs to a
 
 <strong> Vision Transformer: </strong>
 
-The ViT is similar to the original Transformer architecture's encoder ["An Image is Worth...](https://arxiv.org/abs/2010.11929). The standard Transformer receives a 1D sequence of token embeddings as input. For the ViT to handle 2D images, the image $x \in \mathbb{R}^{H \times W \times C}$ is reshaped into a sequence of flattened 2D patches $x_p \in \mathbb{R}^{N \times (P^2 \cdot C)}$. In this input $H$ is the height of the input image, $W$ is the width, and $C$ is the number of channels (3 for RGB images). Furthermore, $(P, P)$ is the spatial resolution of each image patch and $N=HW/P^2$ is the number of patches, or the input sequence length to the transformer. Each patch is flattened and mapped to $D$ dimensions using a trainable linear projection, resulting in individual patch embeddings. Learnable positional encodings are added to these embeddings to inform the attention layers about the structure of the image. A schematic drawing of this architecture is shown in Figure 19.
+The ViT is similar to the original Transformer architecture's encoder ["An Image is Worth...](https://arxiv.org/abs/2010.11929). The standard Transformer receives a 1D sequence of token embeddings as input. For the ViT to handle 2D images, the image $x \in \mathbb{R}^{H \times W \times C}$ is reshaped into a sequence of flattened 2D patches $x_p \in \mathbb{R}^{N \times (P^2 \cdot C)}$. In this input $H$ is the height of the input image, $W$ is the width, and $C$ is the number of channels (3 for RGB images). Furthermore, $(P, P)$ is the spatial resolution of each image patch and $N=HW/P^2$ is the number of patches or the input sequence length to the transformer. Each patch is flattened and mapped to $D$ dimensions using a trainable linear projection, resulting in individual patch embeddings. Learnable positional encodings are added to these embeddings to inform the attention layers about the structure of the image. A schematic drawing of this architecture is shown in Figure 19.
 
 <table align="center">
   <tr align="center">
