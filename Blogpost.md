@@ -224,7 +224,9 @@ This method resembles [Basu et al. 2022](https://arxiv.org/abs/2210.06475), thou
 
 **Max Pooling**: Selecting the highest logit for each element within the vector across all action groups $G$.
 
-$$ [M_G(x)]__{i} = \max_{g \in G}({M(gx)})_i $$
+$$
+[M_G(x)]_i = \max_{g \in G} \left( M(gx) \right)_i
+$$
 
 **Sum Pooling**: Summing the logits from all action groups $G$.
 
