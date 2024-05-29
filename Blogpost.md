@@ -310,7 +310,7 @@ In the first experiment, we trained and evaluated on rotation MNIST as done in [
 </tbody>
 </table>
 
-In the table below we show the results of a normal ViT and one where we used the common approach of test time augmentation, where we use mean pooling over the logits over different image transformations. Note that these transformations are the same for our post hoc methods. We show these numbers for all experiments as the idea is similar, however fine-tuning the last layer or entire model doesn't make sense when merely aggregating the model's outputs.
+In the table below we show the results of a normal ViT and one where we used the common approach of test time augmentation (TTA), where we use mean pooling over the logits over different image transformations. Note that these transformations are the same for our post hoc methods. We show these numbers for all experiments as the idea is similar, however fine-tuning the last layer or entire model doesn't make sense when merely aggregating the model's outputs.
 
 <table  align="center">
 <thead>
