@@ -234,13 +234,17 @@ $$ M_G(x) = \sum_{g \in G}{M(gx)} $$
 
 #### Method 2: Computing Logits for Each Transformation Independently
 
-**Select Most Likely**: Combining through softmax to obtain the final logits.
+**Select Most Likely**: Combine by multiplying the probabilities obtained from different input transformations.
 
 $$  M_G(x) = \log \left( \prod_{g \in G}\text{softmax}{(M(gx))} \right) $$
 
-**Select Most Certain**: Select the transformation with the highest probability for each class, then select the logits corresponding to these highest probabilities.
+Inspired by Maximum Likelihood Estimation, we predict the class with the highest product of probabilities across various transformations. The rationale is that if all transformations consistently assign high probabilities to the same class, this class is more likely to be correct than a class where some probabilities are close to zero.
 
-$$  M_G(x) = \text{arg max}_{g \in G} (\text{softmax}{(M(gx))}) $$
+**Select Most Certain**: Select the outputs for the transformation that assigns the highest probability to some class.
+
+$$  M_G(x) = \text{arg max}_{g \in G} (\max{\text{softmax}{(M(gx))}}) $$
+
+The T transformations all output C probabilities. You look for the largest of these T*C probabilities and use the C outputs from the transformation that provided this probability. The idea is that the model can be uncertain about some less frequently observed transformations during training and assigns a high probability to the correct class for transformations more common in the training data.
 
 #### Method 3: Utilizing External Model within Aggregation
 
@@ -256,7 +260,7 @@ $$ M_G(x) = \sum_{g \in G}^{|G|}λ(gx)M(gx) \frac{1}{\sum_{g \in G}{λ(gx)}}$$
 
 $$ M_G(x) = \text{MHA}(\cup_{g \in G}M(gx)), g\in G $$
 
-Here, each latent embedding, $ M(gx) $, is provided as a separate input to a multi-headed attention (MHA) block. MHA is permutation invariant for constant positional encoding, thus we can invariantly aggregate the latent embeddings when we provide no positional encoding and take the final embedding of the CLS vector as the aggregated embedding. This is exactly what we did and, like in most of our other approaches, this CLS vector is now projected to logits with the original last layer.
+Here, each latent embedding, M(gx), is provided as a separate input to a multi-headed attention (MHA) block. MHA is permutation invariant for constant positional encoding, thus we can invariantly aggregate the latent embeddings when we provide no positional encoding and take the final embedding of the CLS vector as the aggregated embedding. This is exactly what we did and, like in most of our other approaches, this CLS vector is now projected to logits with the original last layer.
 
 To demonstrate the equivariance of this mechanism, we visualize the behavior of attention inside the model when the input transforms. In Figure 10, for an image rotated and flipped in 8 ways, we observe how the CLS token attends across MHA blocks. Notice how the CLS token attends to different columns, representing different transformed input embeddings, for each transformation.
 
