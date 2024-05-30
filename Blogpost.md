@@ -178,7 +178,7 @@ To transform a pre-trained non-equivariant model $M$ into an equivariant model $
 
 In our investigation of image classification, we utilize the $C_4$ (90° rotations) and $D_4$ groups (90° rotations and horizontal flips). The reason we chose them is that these groups consistently outperform non-equivariant networks on the CIFAR-10 dataset, as evidenced by [Cohen and Welling 2016](https://arxiv.org/abs/1602.07576).
 
-The $C_4$ group comprises {$e$, $r$, $r^2$, $r^3$}, where $e$ denotes the identity and $r$ represents a 90° rotation.
+The $C_4$ group comprises {e, $r$, $r^2$, $r^3$}, where e denotes the identity and $r$ represents a 90° rotation.
 
 Given an image set $X$, the group action of $G$ is applied on $X$ as $\Gamma X$: $G \times X \rightarrow X$. We denote $\Gamma X(g,x)$ as $gx$. A model $M$: $X \rightarrow Y$ is considered equivariant to $G$ under the group action of $G$ on $X$ and $Y$ if $M(gx) = g(M(x))$ for all $g \in G$ and $x \in X$. This implies that any group transformation $g$ applied to the input $\Gamma X(g,x)$ should result in an equivalent transformation of the output $\Gamma Y(gM(x))$.
 
@@ -192,7 +192,7 @@ $$ M_G(gx) = gM_G(x) $$
 
 for all $g \in G$.
 
-To demonstrate the equivariant of the method, we visualize the pipeline for this method in Figure 9. It illustrates how post hoc equivariance works. The input image undergoes various transformations to achieve equivariance (in this case, 90-degree rotations). Each transformed image is processed by the same model, which generates latent embeddings or class probabilities. These embeddings (or probabilities) are then aggregated in an invariant way. Note that the model's latent representations are equivariant to the group (because of the lifting to the group) until they are aggregated, which is done using an invariant operation.
+To demonstrate the equivariance of the method, we visualize the pipeline for this method in Figure 9. It illustrates how post hoc equivariance works. The input image undergoes various transformations to achieve equivariance (in this case, 90-degree rotations). Each transformed image is processed by the same model, which generates latent embeddings or class probabilities. These embeddings (or probabilities) are then aggregated in an invariant way. Note that the model's latent representations are equivariant to the group (because of the lifting to the group) until they are aggregated, which is done using an invariant operation.
 
 <table align="center">
   <tr align="center">
@@ -436,7 +436,7 @@ One of the advantages of purely equivariant models is that the training data can
 <thead>
 <tr>
 <th align="center">Model</th>
-<th align="center">Best Reported Test Accuracy</th>
+<th align="center">Test Accuracy (we obtained)</th>
 </tr>
 </thead>
 <tbody>
