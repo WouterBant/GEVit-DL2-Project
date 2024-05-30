@@ -443,7 +443,6 @@ One of the advantages of purely equivariant models is that the training data can
 </tr>
 </tbody>
 </table>
---->
 
 <table align="center">
 <thead>
