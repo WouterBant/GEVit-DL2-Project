@@ -122,6 +122,15 @@ def main(finetune):
     test_acc = test(model, test_loader, device)
     accuracies.append((type(model).__name__, val_acc, test_acc))
 
+    # normal mean pooling
+    set_seed(42)
+    model = PretrainedResnet50()
+    model = model.to(device)
+    model_normal_mean_pool = NormalMeanPool(model, n_rotations=4, flips=True).to(device)
+    val_acc = evaluate(model_normal_mean_pool, val_loader, device)
+    test_acc = test(model_normal_mean_pool, test_loader, device)
+    print(val_acc, test_acc)
+
     # mean pooling
     set_seed(42)
     model = PretrainedResnet50()

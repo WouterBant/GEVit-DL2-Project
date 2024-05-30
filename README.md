@@ -1,6 +1,6 @@
 # E(2) Equivariant Attention Models for Image Classification 
 
-### Authors: Wouter Bant, Colin Bot, Jasper Eppink, Clio Feng, Floris Six Dijkstra
+### Authors: [Wouter Bant](https://github.com/wouterBant), [Colin Bot](https://github.com/colin-bot), [Jasper Eppink](https://github.com/JasperEppink), [Clio Feng](https://github.com/fclio), [Floris Six Dijkstra](https://github.com/Floris6D)
 
 
 ## Introduction
@@ -21,7 +21,7 @@ For the full analysis see [our blogpost](Blogpost.md), but to give a little prev
   </tr>
 </table>
 
-- 🎯 Evaluate and propose novel ways of making any image classification model globally E(2) equivariant and beat previous image classification benchmarks:
+- 🎯 Evaluate and propose novel ways of making any image classification model globally E(2) equivariant, outperform regular test time augmentation, and beat previous image classification benchmarks:
 
 <table align="center">
   <tr align="center">
@@ -31,7 +31,7 @@ For the full analysis see [our blogpost](Blogpost.md), but to give a little prev
 </table>
 
 
-- ⚡ Speed up GE-ViTs by projecting the image to an artificial image with lower spatial resolution for less attention computations:
+- ⚡ Speed up and improve GE-ViTs by projecting the image to an artificial image with lower spatial resolution for less attention computations:
 <table align="center">
   <tr align="center">
       <td><img src="figures/modern_eq_vit.png" width=600></td>
@@ -63,7 +63,7 @@ cd GEVit-DL2-Project
 Unfortunately we had to use two different environments. For running the GE-ViT you can create the environment with:
 
 ```bash
-conda create -f gevit_conda_env.yml
+conda env create -f gevit_conda_env.yml 
 ```
 
 ```bash
@@ -73,7 +73,7 @@ conda activate gevit
 For running the post hoc experiments and training of the equivariant modern ViT:
 
 ```bash
-conda create -f posthoc_conda_env.yml
+conda env create -f posthoc_conda_env.yml
 ```
 
 ```bash
