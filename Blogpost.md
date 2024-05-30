@@ -432,6 +432,7 @@ Finally, when comparing the results of TTA with mean pooling we see that our met
 #### 2. Training on the full standard MNIST dataset and evaluating on the full rotation MNIST dataset
 One of the advantages of purely equivariant models is that the training data can be in different orientations than the test data, as long as the transformations between the training and testing examples are within the group the model is equivariant to. This is typically not the case for non-equivariant models. Therefore, we now test how well post hoc methods can improve the performance of non-equivariant models.
 
+<!---  TODO check this, this number seems to low
 <table align="center">
 <thead>
 <tr>
@@ -446,6 +447,7 @@ One of the advantages of purely equivariant models is that the training data can
 </tr>
 </tbody>
 </table>
+--->
 
 <table align="center">
 <thead>
