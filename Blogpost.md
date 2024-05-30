@@ -242,7 +242,7 @@ Inspired by Maximum Likelihood Estimation, we predict the class with the highest
 
 **Select Most Certain**: Select the outputs for the transformation that assigns the highest probability to some class.
 
-$$  M_G(x) = \text{arg max}_{g \in G} (\max{(\text{softmax}{(M(gx))})}) $$
+$$  M_G(x) = M ((\text{arg max}_{g \in G} (\max{(\text{softmax}{(M(gx))})}))x) $$
 
 The T transformations all output C probabilities. You look for the largest of these T*C probabilities and use the C outputs from the transformation that provided this probability. The idea is that the model can be uncertain about some less frequently observed transformations during training and assigns a high probability to the correct class for transformations more common in the training data.
 
