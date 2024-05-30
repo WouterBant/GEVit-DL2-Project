@@ -5,7 +5,7 @@
 
 ### Wouter Bant, Colin Bot, Jasper Eppink, Clio Feng, Floris Six Dijkstra
 
-##TLDR
+## TLDR
 GEViT is an E(2) equivariant vision model which builds upon GSA-nets by altering the positional encoding. Although GEVitTcan theoretically be more expressive than G-CNNs, it is a very computationally expensive model, and does not seem to have superior performance over G-CNNs. In our experiments we found that we get superior results with normal vision transformer, which we augment to be equivariant post-hoc, this is also significanlty less computationally demanding. Lastly, we utilize a G-CNN to extract equivariant features and downsize the image before passing it to the GEViT. This drastically improves efficiency, getting similar results in %5 of the epochs with a model that's 40 times as fast. 
 ---
 In this blog post, we analyze and evaluate $E(2)$ Equivariant Vision Transformers and propose alternative methods for equivariant attention models discussed in ["E(2)-Equivariant Vision Transformer"](https://proceedings.mlr.press/v216/xu23b.html). The referenced paper introduces a Group-Equivariant Vision Transformer (GE-ViT), an equivariant adaptation of the Vision Transformer (ViT) from ["An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"](https://arxiv.org/abs/2010.11929) that employs a novel positional encoding for group equivariance.
