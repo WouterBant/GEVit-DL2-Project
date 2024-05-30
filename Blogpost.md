@@ -243,7 +243,7 @@ The T transformations all output C probabilities. You look for the largest of th
 
 #### Method 3: Utilizing External Model within Aggregation
 
-- Here, $M_G(x)$ and $M(x)$ again refer to the penultimate features.
+- Here, $M_G(x)$ and $M(x)$ again refer to the features in the penultimate layer.
 
 **Learned Weighted Average**: Incorporating significance weight with mean pooling.
 
