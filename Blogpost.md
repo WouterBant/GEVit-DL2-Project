@@ -5,10 +5,12 @@
 
 ### Wouter Bant, Colin Bot, Jasper Eppink, Clio Feng, Floris Six Dijkstra
 
+##TLDR
+GEViT is an E(2) equivariant vision model which builds upon GSA-nets by altering the positional encoding. Although GEVitTcan theoretically be more expressive than G-CNNs, it is a very computationally expensive model, and does not seem to have superior performance over G-CNNs. In our experiments we found that we get superior results with normal vision transformer, which we augment to be equivariant post-hoc, this is also significanlty less computationally demanding. Lastly, we utilize a G-CNN to extract equivariant features and downsize the image before passing it to the GEViT. This drastically improves efficiency, getting similar results in %5 of the epochs with a model that's 40 times as fast. 
 ---
 In this blog post, we analyze and evaluate $E(2)$ Equivariant Vision Transformers and propose alternative methods for equivariant attention models discussed in ["E(2)-Equivariant Vision Transformer"](https://proceedings.mlr.press/v216/xu23b.html). The referenced paper introduces a Group-Equivariant Vision Transformer (GE-ViT), an equivariant adaptation of the Vision Transformer (ViT) from ["An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"](https://arxiv.org/abs/2010.11929) that employs a novel positional encoding for group equivariance.
 
-Specifically, this blog post:
+Specifically, in this blog post we:
 1. Analyze and experiment with the GE-ViT, and reproduce a subset of the original results reported in the paper. Due to computational constraints, reproducing the full experiments was not achievable. Additionally, we conduct alternative experiments and comprehensively discuss the model's strengths and weaknesses.
 2. Visualize different intermediate computations such as latent representations and attention maps throughout the layers of equivariant and non-equivariant models to enhance researchers' understanding. 
 3. Evaluate existing and novel methods (e.g., [Basu et al. 2022](https://arxiv.org/abs/2210.06475),  [Basu et al. 2023](https://arxiv.org/abs/2305.09900)) to make non-equivariant (attention) models (e.g., [Lippe 2023](https://lightning.ai/docs/pytorch/stable/notebooks/course_UvA-DL/11-vision-transformer.html), [Dosovitskiy et al. 2021](https://arxiv.org/abs/2010.11929)), equivariant in a post-hoc manner by combining predictions of different transformations of the input that reflect inductive biases.
@@ -32,7 +34,7 @@ In Natural Language Processing (NLP), [Vaswani et al. 2017](https://proceedings.
   </tr>
 </table>
 
-Figure 1 highlights the importance of equivariant models. The non-equivariant ViT changes its predictions with input transformations, while the equivariant ViT provides consistent predictions. This consistency is crucial in fields like cell analysis, where orientation-invariant predictions are essential.
+Figure 1 highlights the importance of equivariant models. The non-equivariant ViT changes its predictions with input transformations, while the equivariant ViT utilises its equivariance to provide invariant predictions. This consistency is crucial in fields like cell analysis, where orientation-invariant predictions are essential.
 
 --- 
 
@@ -174,25 +176,13 @@ A model is group equivariant if transformations of its input result in a group t
 Besides these ways of aggregating the embeddings we propose and evaluate the following ways of aggregating the latent dimensions: sum pooling, max pooling, and multi-head attention without positional encodings. Furthermore, we experiment with predicting the class with the highest probability among all transformations and predicting the class with the highest product of probabilities. In the next section, we will more formally discuss these methods.
 
 ### Equivariant Embedding Model
-To transform a pre-trained non-equivariant model $M$ into an equivariant model $M_G$, our objective is to create $M_G$ such that it maintains equivariance to the actions of a finite group $G$, while minimizing the collective discrepancies between the features $M(gx)$ and $M_G(gx)$ for any $x$, across all $g \in G$. This ensures the preservation of as much pre-trained knowledge from $M$ as possible. We operate under the assumption that the group actions are well-defined.
-
-In our investigation of image classification, we utilize the $C_4$ (90° rotations) and $D_4$ groups (90° rotations and horizontal flips). The reason we chose them is that these groups consistently outperform non-equivariant networks on the CIFAR-10 dataset, as evidenced by [Cohen and Welling 2016](https://arxiv.org/abs/1602.07576).
+To transform a pre-trained non-equivariant model $M$ into an equivariant model $M_G$, our objective is to create $M_G$ such that it maintains equivariance to the actions of a finite group $G$. We operate under the assumption that the group actions are well-defined. In our investigation of image classification, we utilize the $C_4$ (90° rotations) and $D_4$ groups (90° rotations and horizontal flips). The reason we chose them is that these groups consistently outperform non-equivariant networks on the CIFAR-10 dataset, as evidenced by [Cohen and Welling 2016](https://arxiv.org/abs/1602.07576).
 
 The $C_4$ group comprises {e, $r$, $r^2$, $r^3$}, where e denotes the identity and $r$ represents a 90° rotation.
 
 Given an image set $X$, the group action of $G$ is applied on $X$ as $\Gamma X$: $G \times X \rightarrow X$. We denote $\Gamma X(g,x)$ as $gx$. A model $M$: $X \rightarrow Y$ is considered equivariant to $G$ under the group action of $G$ on $X$ and $Y$ if $M(gx) = g(M(x))$ for all $g \in G$ and $x \in X$. This implies that any group transformation $g$ applied to the input $\Gamma X(g,x)$ should result in an equivalent transformation of the output $\Gamma Y(gM(x))$.
 
-To convert the non-equivariant model to an equivariant one, we aim to solve the following optimization problem:
-
-$$ \min_{M_G(x)} \sum_{g \in G} ||M(gx) -M_G(gx)||_2^2 $$
-
-subject to:
-
-$$ M_G(gx) = gM_G(x) $$
-
-for all $g \in G$.
-
-To demonstrate the equivariance of the method, we visualize the pipeline for this method in Figure 9. It illustrates how post hoc equivariance works. The input image undergoes various transformations to achieve equivariance (in this case, 90-degree rotations). Each transformed image is processed by the same model, which generates latent embeddings or class probabilities. These embeddings (or probabilities) are then aggregated in an invariant way. Note that the model's latent representations are equivariant to the group (because of the lifting to the group) until they are aggregated, which is done using an invariant operation.
+To demonstrate the equivariance of the method, we visualize the pipeline for this method in Figure 9. It illustrates how post hoc equivariance works. The input image undergoes various transformations to achieve equivariance (in this case, 90-degree rotations). Each transformed image is processed by the same model, which generates latent embeddings or class probabilities. These embeddings (or probabilities) are then aggregated in an invariant way.
 
 <table align="center">
   <tr align="center">
@@ -209,26 +199,29 @@ For the final layer, unlike [Basu et al. 2022](https://arxiv.org/abs/2210.06475)
 For our purposes, we define a model $M$: $X \rightarrow Y$ as invariant to $G$ under the group action of $G$ on $X$ and $Y$ if $M(gx) = M(x)$ for all $g \in G$ and $x \in X$, indicating that the transformation does not impact the output.
 
 Hence, for the final invariant layer, we employ the following methods:
-#### Method 1: Combining Embeddings from all Transformation Groups
+#### Method 1: Combining Features from all Transformation Groups
 
 - $x$: input image.
 - $g$: transformation in group $G$.
-- $M(x)$: output logits from the original input image $x$.
-- $M_G(x)$: transformation-invariant output logits.
+- $M(x)$: output features from the original input image $x$ in the penultimate layer.
+- $M_G(x)$: corresponding transformation-equivariant features.
 
-**Mean Pooling**: Averaging the logits from all action groups $G$.
+**Mean Pooling**: Averaging the features from all action groups $G$.
 
 $$ M_G(x) = \frac{\sum_{g \in G}{M(gx)}}{|G|} $$
 
-This method resembles [Basu et al. 2022](https://arxiv.org/abs/2210.06475), though they employed the Reynolds operator from [Sturmfels 2008](https://www.math.ens.psl.eu/~benoist/refs/Sturmfels.pdf) with the inverse of the transformation $g^{-1}$ to satisfy $M(gx) = g(M(x))$ as demonstrated by [Yarotsky 2022](https://arxiv.org/abs/1804.10306).
+This method resembles [Basu et al. 2022](https://arxiv.org/abs/2210.06475), though they employed the Reynolds operator from [Sturmfels 2008](https://www.math.ens.psl.eu/~benoist/refs/Sturmfels.pdf) with the inverse of the transformation $g^{-1}$ to satisfy $M(gx) = g(M(x))$ as demonstrated by [Yarotsky 2022](https://arxiv.org/abs/1804.10306). In short, we mean pool the features over the group in the penultimate layer.
 
-**Max Pooling**: Selecting the highest logit for each element within the vector across all action groups $G$.
+**Max Pooling**: Selecting the highest features for each element within the vector across all action groups $G$.
 
 $$
 [M_G(x)]i = \max_{g \in G} \left( M(gx) \right)_i
 $$
 
-**Sum Pooling**: Summing the logits from all action groups $G$.
+**Sum Pooling**: Summing the features from all action groups $G$.
+
+- Here, $M_G(x)$ and $M(x)$ refer to the output logits instead of penultimate features.
+- The rest is the same as before
 
 $$ M_G(x) = \sum_{g \in G}{M(gx)} $$
 
@@ -248,11 +241,13 @@ The T transformations all output C probabilities. You look for the largest of th
 
 #### Method 3: Utilizing External Model within Aggregation
 
+- Here, $M_G(x)$ and $M(x)$ again refer to the penultimate features.
+
 **Learned Weighted Average**: Incorporating significance weight with mean pooling.
 
-Since features $M(gx)$ derived from a fixed $x$ within a pretrained model $M$ are not uniformly crucial across all transformations $g \in G$, we incorporate significance weight with the embedding. After obtaining the embedding for each transformation, we pass the embedding through a simple fully connected neural network to predict weights from input feature vectors, leveraging a linear transformation and GELU activation for effective learning. Additionally, we normalize the weights so that the sum for all embeddings is 1.
+Since features $M(gx)$ derived from a fixed $x$ within a pretrained model $M$ are not uniformly crucial across all transformations $g \in G$, we experiment with incorporating significance weight with the features. After obtaining the features for each transformation, we pass the features through a simple fully connected neural network to predict importance weights, leveraging a linear transformation and GELU activation. Additionally, we normalize the weights so that the sum for all embeddings is 1.
 
-Let $λ(gx)$ denote the significance weight assigned to feature $M(gx)$ for $g \in G$, $x \in X$. Inspired by [Basu et al. 2023](https://arxiv.org/abs/2305.09900), though with the goal of invariance, assuming a finite $G$, $λ : X → R^+$ is predefined. 
+Let $λ(gx)$ denote the significance weight assigned to feature $M(gx)$ for $g \in G$, $x \in X$. Inspired by [Basu et al. 2023](https://arxiv.org/abs/2305.09900), though with the goal of invariance, assuming a finite $G$, $λ : X → R^+$ is predefined.
 
 $$ M_G(x) = \sum_{g \in G}^{|G|}λ(gx)M(gx) \frac{1}{\sum_{g \in G}{λ(gx)}}$$
 
@@ -260,7 +255,7 @@ $$ M_G(x) = \sum_{g \in G}^{|G|}λ(gx)M(gx) \frac{1}{\sum_{g \in G}{λ(gx)}}$$
 
 $$ M_G(x) = \text{MHA}(\cup_{g \in G}M(gx)), g\in G $$
 
-Here, each latent embedding, M(gx), is provided as a separate input to a multi-headed attention (MHA) block. MHA is permutation invariant for constant positional encoding, thus we can invariantly aggregate the latent embeddings when we provide no positional encoding and take the final embedding of the CLS vector as the aggregated embedding. This is exactly what we did and, like in most of our other approaches, this CLS vector is now projected to logits with the original last layer.
+Here, each latent feature, M(gx), is provided as a separate input to a multi-headed attention (MHA) block. MHA is permutation invariant by definition, thus we can invariantly aggregate the latent embeddings when we provide no positional encoding and take the final embedding of the CLS vector as the aggregated embedding. This is exactly what we did and, like in most of our other approaches, this CLS vector is now projected to logits with the original last layer.
 
 To demonstrate the equivariance of this mechanism, we visualize the behavior of attention inside the model when the input transforms. In Figure 10, for an image rotated and flipped in 8 ways, we observe how the CLS token attends across MHA blocks. Notice how the CLS token attends to different columns, representing different transformed input embeddings, for each transformation.
 
@@ -432,7 +427,6 @@ Finally, when comparing the results of TTA with mean pooling we see that our met
 #### 2. Training on the full standard MNIST dataset and evaluating on the full rotation MNIST dataset
 One of the advantages of purely equivariant models is that the training data can be in different orientations than the test data, as long as the transformations between the training and testing examples are within the group the model is equivariant to. This is typically not the case for non-equivariant models. Therefore, we now test how well post hoc methods can improve the performance of non-equivariant models.
 
-<!---  TODO check this, this number seems to low
 <table align="center">
 <thead>
 <tr>
@@ -443,7 +437,7 @@ One of the advantages of purely equivariant models is that the training data can
 <tbody>
 <tr>
 <td align="center">GE-ViT</td>
-<td align="center">83.41</td>
+<td align="center">96.39</td>
 </tr>
 </tbody>
 </table>
@@ -926,7 +920,7 @@ Clio Feng:
 Worked mostly on investigating the equivariant and invariant properties of the post-hoc method from relevant research and wrote the section on post-hoc method. Implemented the code for including training on MNIST and on a fraction of the dataset and wrote the GE-ViT architecture section. Help with the overall blogpost.
 
 Floris Six Dijkstra:
-Came up with and implemented the method of downsizing the image with a G-CNN. Came up with testing models performance trained on normal MNIST. Helped with early orientation into post-hoc methods.
+Came up with, implemented, and tested the method of downsizing the image with a G-CNN. Came up with testing models performance trained on normal MNIST. Helped with early orientation into post-hoc methods.
 
 ## References
 
